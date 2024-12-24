@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -27,6 +28,7 @@ use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Tags\HasTags;
 
@@ -37,6 +39,7 @@ class User extends Authenticatable implements ModelQuery, Taggable
     use HasProfilePhoto;
     use HasProjectResource;
     use HasRoles;
+    use HasPermissions;
     use HasTags;
     use HasTeams;
     use LogsActivity;
@@ -86,12 +89,17 @@ class User extends Authenticatable implements ModelQuery, Taggable
             'email_verified_at' => 'datetime',
         ];
     }
+    public function personalProjects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->logOnly(['name', 'email'])
             ->useLogName('user')
+            ->dontSubmitEmptyLogs()
             ->logOnlyDirty();
     }
 
@@ -118,6 +126,11 @@ class User extends Authenticatable implements ModelQuery, Taggable
     public function messages(): HasManyThrough
     {
         return $this->hasManyThrough(Message::class, Credential::class)->orderByDesc('originated_at');
+    }
+
+    public function servers(): HasManyThrough
+    {
+        return $this->hasManyThrough(Server::class, Credential::class);
     }
 
     public function externalRssFeeds(): MorphMany

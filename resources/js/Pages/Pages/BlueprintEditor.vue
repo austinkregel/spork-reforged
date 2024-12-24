@@ -17,6 +17,10 @@
                         @dragstart="drag($event)"
                         class="drag-drawflow"
                     >
+
+                        <!-- :data-node needs to be able to have 2 previews -->
+                        <!--  1 preview to show or connect the inputs/outputs of nodes (for workflow connecting) -->
+                        <!--  2 preview to show the rendered preview of the html (for page design) -->
                         <BuilderItem :name="n.name" :icon="n.type" item="n" />
                     </li>
                 </ul>

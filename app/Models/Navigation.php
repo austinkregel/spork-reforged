@@ -26,7 +26,21 @@ class Navigation extends Model implements Conditionable, Crud
     use ScopeQSearch;
     use ScopeRelativeSearch;
 
-    public $guarded = [];
+    public $fillable = [
+        'domain_id',
+        'parent_id',
+        'name',
+        'icon',
+        'href',
+        'order',
+        'authentication_required',
+        'settings',
+        'title',
+        'description',
+        'pretty_url',
+        'ugly_url',
+        'group'
+    ];
 
     public $hidden = ['id', 'created_at', 'updated_at'];
 

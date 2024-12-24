@@ -18,16 +18,9 @@ class DescribeTableService
     public function describe(Model $model): array
     {
         $mapField = fn ($everything) => array_values(array_map(fn ($query) => $query->Field, $everything));
-        $description = cache()->remember(
-            'description.'.get_class($model),
-            now()->addHour(),
-            fn () => DB::select('describe '.(new $model)->getTable())
-        );
-        $indexes = cache()->remember(
-            'indexes.'.get_class($model),
-            now()->addHour(),
-            fn () => DB::select('show indexes from '.(new $model)->getTable())
-        );
+        $description = DB::select('describe '.(new $model)->getTable());
+
+        $indexes = DB::select('show indexes from '.(new $model)->getTable());
         $fields = $mapField($description);
         $sorts = array_filter($description, function ($query) {
             if (str_contains($query->Type, 'int') && $query->Null == 'NO') {
@@ -138,7 +131,7 @@ class DescribeTableService
                             'type' => match ($simpleType[0]) {
                                 'bigint' => 'number',
                                 'varchar' => 'text',
-                                'longtext' => 'textarea',
+                                'text', 'longtext' => 'textarea',
                                 'datetime', 'timestamp' => 'datetime',
 
                                 default => $simpleType[0]
@@ -156,7 +149,15 @@ class DescribeTableService
             'required' => $mapField(array_filter($description, fn ($query) => $query->Null === 'NO' && $query->Extra !== 'auto_increment')),
         ], $model instanceof Taggable ? [
             'tags' => Tag::query()->whereNull('type')->orWhere('type', Str::singular($model->getTable()))->get(),
-        ] : []);
+        ] : [],
+            auth()->check() ? [
+                'permissions' => [
+                    'create' => auth()->user()->can('create_'.Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                    'update' => auth()->user()->can('update_'.Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                    'delete' => auth()->user()->can('delete_'.Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                    'delete_any' => auth()->user()->can('delete_any_'.Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                ],
+            ] : []);
     }
 
     public function describeTable(string $table): array

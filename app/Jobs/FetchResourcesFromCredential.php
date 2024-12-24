@@ -39,16 +39,22 @@ class FetchResourcesFromCredential implements ShouldQueue
             return;
         }
 
-        $this->batch()->add([
-            match ($this->credential->type) {
-                Credential::TYPE_REGISTRAR => new FetchRegistrarForCredential($this->credential),
-                Credential::TYPE_DOMAIN => new FetchDomainsForCredential($this->credential),
-                Credential::TYPE_SERVER => new FetchServersForCredential($this->credential),
-                Credential::TYPE_DEVELOPMENT, 'forge' => new LaravelForgeServersSyncJob($this->credential),
-                Credential::TYPE_FINANCE => new SyncPlaidTransactionsJob($this->credential, now()->subWeek(), now(), false),
-                Credential::TYPE_EMAIL => new SyncMailboxIfCredentialsAreSet($this->credential),
-                default => Log::error(sprintf('Found unsupported credential type for FetchResourcesFromCredentialsJob: %s', $this->credential->type), []),
-            },
-        ]);
+        $nextJob = match ($this->credential->type) {
+            Credential::TYPE_REGISTRAR => new FetchRegistrarForCredential($this->credential),
+            Credential::TYPE_DOMAIN => new FetchDomainsForCredential($this->credential),
+            Credential::TYPE_SERVER => new FetchServersForCredential($this->credential),
+            Credential::TYPE_DEVELOPMENT, 'forge' => new LaravelForgeServersSyncJob($this->credential),
+            Credential::TYPE_FINANCE => new SyncPlaidTransactionsJob($this->credential, now()->subWeek(), now(), false),
+            Credential::TYPE_EMAIL => new SyncMailboxIfCredentialsAreSet($this->credential),
+            default => Log::error(sprintf('Found unsupported credential type for FetchResourcesFromCredentialsJob: %s', $this->credential->type), []),
+        };
+
+        if ($this->batch()) {
+            $this->batch()->add([
+                $nextJob,
+            ]);
+        } else {
+            dispatch($nextJob);
+        }
     }
 }

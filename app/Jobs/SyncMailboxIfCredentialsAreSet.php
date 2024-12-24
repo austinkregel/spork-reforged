@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Models\Credential;
 use App\Models\Person;
+use App\Models\User;
 use App\Services\Messaging\ImapFactoryService;
 use Carbon\Carbon;
 use Illuminate\Bus\Batchable;
@@ -41,25 +42,19 @@ class SyncMailboxIfCredentialsAreSet implements ShouldQueue
         info('Found '.count($messages).' messages in '.$start->diffInSeconds($end).' seconds');
 
         foreach ($messages as $i => $message) {
-            $trackedMessage = $this->credential->messages()->firstWhere([
-                'type' => 'email',
-                'event_id' => $message['id'],
+            $trackedMessage = $this->credential->emails()->firstWhere([
+                'email_id' => $message['id'],
             ]);
 
             if (empty($trackedMessage)) {
                 $body = $imapService->findMessage((string) $message['id']);
-                $trackedMessage = $this->credential->messages()->create([
-                    'from_person' => $this->getPersonFromEmail($message),
+                $trackedMessage = $this->credential->emails()->create([
+                    'email_id' => $message['id'],
                     'from_email' => (empty($message['from']['email']) ? null : $message['from']['email']) ?? $message['addressed-from']['email'] ?? null,
                     'to_email' => (empty($message['to']['email']) ? null : $message['to']['email']) ?? $message['addressed-to']['email'] ?? null,
-                    'to_person' => $this->getPersonToEmail($message),
-                    'type' => 'email',
-                    'event_id' => $message['id'],
-                    'originated_at' => $message['date'],
+                    'sent_at' => $message['date'],
                     'subject' => $body['subject'],
-                    'is_decrypted' => true,
                     'message' => $body['body'],
-                    'html_message' => $body['view'],
                     'seen' => $body['seen'],
                     'spam' => $body['spam'],
                     'answered' => $body['answered'],
@@ -67,10 +62,8 @@ class SyncMailboxIfCredentialsAreSet implements ShouldQueue
             } else {
                 $body = $imapService->findMessage((string) $message['id']);
                 collect([
-                    'originated_at' => $message['date'],
-                    'is_decrypted' => true,
+                    'sent_at' => $message['date'],
                     'message' => $body['body'],
-                    'html_message' => $body['view'],
                     'from_email' => (empty($message['from']['email']) ? null : $message['from']['email']) ?? $message['addressed-from']['email'] ?? null,
                     'to_email' => (empty($message['to']['email']) ? null : $message['to']['email']) ?? $message['addressed-to']['email'] ?? null,
                     'subject' => $body['subject'],
@@ -84,23 +77,20 @@ class SyncMailboxIfCredentialsAreSet implements ShouldQueue
                 });
 
                 if ($trackedMessage->isDirty([
-                    'originated_at',
-                    'is_decrypted',
+                    'sent_at',
                     'message',
-                    'html_message',
                     'seen',
                     'spam',
                     'answered',
+                    'subject',
                 ])) {
                     $this->getPersonToEmail($message);
                     $this->getPersonFromEmail($message);
                     $trackedMessage->save();
                 }
             }
-
-            info('Processed '.$i.'/'.count($messages));
         }
-
+        info('Finished syncing mailbox');
     }
 
     protected function getPersonFromEmail(array $message)
@@ -124,6 +114,7 @@ class SyncMailboxIfCredentialsAreSet implements ShouldQueue
             $person = Person::create([
                 'name' => $fromName,
                 'emails' => [$fromEmail],
+                'user_id' => User::firstWhere('email', env('SPORK_ADMIN_EMAILS'))->id,
             ]);
         }
         $emails = array_values(array_unique(array_filter(array_merge($person->emails, [$message['from']['email']]), fn ($val) => ! empty($val))));
@@ -157,7 +148,6 @@ class SyncMailboxIfCredentialsAreSet implements ShouldQueue
 
         if (empty($person)) {
             $person = Person::first();
-            info('This thing from email: '.$fromEmail);
 
             $person->update([
                 'emails' => array_values(array_unique(array_merge($person->emails, [strtolower($fromEmail)]))),

@@ -1,17 +1,17 @@
 <template>
   <AppLayout title="Dashboard">
     <div class="flex flex-wrap gap-4 m-4">
-        <div class="w-full font-medium text-stone-600 dark:text-stone-300 uppercase ml-3">Recent</div>
+        <div class="w-full font-medium text-stone-600 dark:text-stone-300 uppercase ml-4">Recent</div>
         <div
             v-for="(topic, i) in research ?? []"
-            class="w-64 p-3 border border-stone-200 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-600"
+            class="w-64 p-3 border border-stone-200 dark:border-stone-800 rounded-lg bg-white dark:bg-stone-800"
             :key="'research-'+i"
         >
             <ContextMenu>
                 <div>
                     <Link :href="'/-/research/'+ topic.id">
                             <div  class="font-medium truncate">{{ topic.name }}</div>
-                            <pre class=" h-48 shadow-inset overflow-hidden text-xs border-t py-2 my-2">{{ topic.notes }}</pre>
+                            <pre class="h-48 shadow-inset overflow-hidden text-xs border-t py-2 my-2 dark:text-slate-300">{{ topic.notes }}</pre>
                     </Link>
                     <div class="text-stone-500 dark:text-stone-200 border-t mt-4 pt-2 flex items-center justify-between">
                         <span>{{ date(topic.updated_at) }}</span>

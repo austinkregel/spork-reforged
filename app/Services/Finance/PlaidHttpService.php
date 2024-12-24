@@ -48,6 +48,14 @@ class PlaidHttpService extends HttpService
         return $this;
     }
 
+    public function production(): self
+    {
+        $this->url = sprintf($this->baseUrl, 'production');
+        $this->new($this->url, []);
+
+        return $this;
+    }
+
     public function auth($data): HttpService
     {
         $this->authBits = $data;

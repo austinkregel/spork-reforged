@@ -11,15 +11,16 @@ use App\Events\Models\Transaction\TransactionDeleted;
 use App\Events\Models\Transaction\TransactionDeleting;
 use App\Events\Models\Transaction\TransactionUpdated;
 use App\Events\Models\Transaction\TransactionUpdating;
+use App\Models\Credential;
 use App\Models\Crud;
 use App\Models\Taggable;
 use App\Models\Traits\ScopeQSearch;
 use App\Models\Traits\ScopeRelativeSearch;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Laravel\Scout\Searchable;
 use Spatie\Tags\HasTags;
 
 class Transaction extends Model implements Crud, ModelQuery, Taggable
@@ -28,6 +29,7 @@ class Transaction extends Model implements Crud, ModelQuery, Taggable
     use HasTags;
     use ScopeQSearch;
     use ScopeRelativeSearch;
+    use Searchable;
 
     public $fillable = [
         'name',
@@ -69,8 +71,15 @@ class Transaction extends Model implements Crud, ModelQuery, Taggable
         return $this->belongsTo(Account::class, 'account_id', 'account_id');
     }
 
-    public function user(): HasManyThrough
+    public function credentials(): HasManyThrough
     {
-        return $this->hasManyThrough(User::class, Account::class);
+        return $this->hasManyThrough(
+            Credential::class,
+            Account::class,
+            'credential_id',
+            'id',
+            'account_id',
+            'account_id'
+        );
     }
 }

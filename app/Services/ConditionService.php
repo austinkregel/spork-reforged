@@ -23,6 +23,7 @@ use App\Services\Condition\LessThanOperator;
 use App\Services\Condition\LessThanOrEqualToOperator;
 use App\Services\Condition\StartsWithOperator;
 use Illuminate\Support\Arr;
+use Laravel\Pennant\Feature;
 
 class ConditionService
 {
@@ -52,20 +53,35 @@ class ConditionService
 
     public function navigation()
     {
+        $parsedUrl = parse_url(request()->getRequestUri());
+
         // So we want to filter out any nav items
         $navItems = Navigation::query()
-            ->with('conditions', 'children')
+            ->with(['conditions', 'children' => function ($builder) {
+                $builder->orderBy('order');
+            }])
             ->where('authentication_required', auth()->check())
             ->whereNull('parent_id')
             ->orderBy('order')
             ->get()
-            ->map(function (Navigation $item) {
-                $item->current = $item->href === request()->getRequestUri() || ($item->children->isNotEmpty() && $item->children->filter(fn ($item) => $item->href === request()->getRequestUri())->count() > 0);
+            ->map(function (Navigation $item) use ($parsedUrl) {
+                $item->current = $item->href === request()->getRequestUri() || (
+                    $item->children->isNotEmpty() &&
+                    // We don't want to use the query param in the comparison
+                    $item->children->filter(fn ($item) => $item->href === $parsedUrl['path'])
+                        ->count() > 0
+                );
+
+                if ($item->children->isNotEmpty()) {
+                    $item->children->sortDesc();
+                }
 
                 return $item;
             });
 
-        return $navItems->filter(fn (Navigation $item) => $this->process($item));
+        return $navItems->filter(fn (Navigation $item) => $this->process($item))
+            ->groupBy('group')
+            ->sortKeys();
     }
 
     public function process(Conditionable $item, array $additionalValueData = [])
@@ -124,6 +140,26 @@ class ConditionService
     {
         return match ($key) {
             'config' => fn ($field) => config($field),
+            'feature' => function ($field) use ($parameter) {
+                $featuresThatMatchField = array_filter(Feature::defined(), fn ($defined) => str_ends_with($defined, implode('\\', array_map('ucfirst', explode('.', $field)))));
+                $feature = Arr::first($featuresThatMatchField);
+
+                if (empty($feature)) {
+                    dd(Feature::defined(), $field, $featuresThatMatchField, $feature, $parameter, implode('\\', array_map('ucfirst', explode('.', $field))));
+                }
+
+                if (! class_exists($feature)) {
+
+                    dd(Feature::defined(), $field, $parameter, implode('\\', array_map('ucfirst', explode('.', $field))));
+
+                    return dd($feature, 'reported feature does not exist; Likely a naming issue');
+                }
+
+
+                return app()->make($feature)->resolve([
+                    'user' => auth()->user(),
+                ]);
+            },
             default => dd($key, $parameter),
         };
     }

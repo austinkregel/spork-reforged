@@ -6,9 +6,11 @@ use App\Providers\AppServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Laravel\Pennant\Feature;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
+        AppServiceProvider::class,
         \Bugsnag\BugsnagLaravel\BugsnagServiceProvider::class,
     ])
     ->withRouting(
@@ -24,10 +26,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web([
             \App\Http\Middleware\HandleInertiaRequests::class,
+            \App\Http\Middleware\EnableFeatureFlags::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->throttleApi();
+        $middleware->statefulApi();
 
         $middleware->replace(\Illuminate\Http\Middleware\TrustProxies::class, \App\Http\Middleware\TrustProxies::class);
     })

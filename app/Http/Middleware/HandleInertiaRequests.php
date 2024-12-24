@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Models\Message;
 use App\Models\Thread;
 use App\Services\ConditionService;
 use Illuminate\Http\Request;
@@ -39,29 +40,27 @@ class HandleInertiaRequests extends Middleware
     {
         if (auth()->check()) {
             auth()->user()->setRelation('person', auth()->user()->person());
+            auth()->user()->load('credentials');
         }
+        $navigation = (new ConditionService)->navigation();
 
         return array_merge(parent::share($request), [
-            'navigation' => $navigation = (new ConditionService)->navigation(),
-            'current_navigation' => $navigation->where('current', true)->first(),
+            'navigation' => $navigation,
+            'current_navigation' => $navigation->flatten(1)->where('current', true)->first(),
             'conversations' => auth()->check() ? Thread::query()
                 ->with(['messages', 'messages.fromPerson', 'messages.toPerson'])
                 ->whereHas('participants', function ($query) {
                     $query->where('person_id', auth()->user()?->person()?->id);
                 })
-                ->orderByDesc('origin_server_ts')
+                ->whereHas('messages')
+                ->orderByDesc('updated_at')
                 ->paginate(
                     request('conversation_limit'),
                     ['*'],
                     'conversation_page',
                     request('conversation_page')
                 ) : null,
-            'unread_email_count' => $request->user() ?
-                $request->user()->messages()
-                    ->where('messages.type', 'email')
-                    ->where('seen', false)
-                    ->count()
-                : 0,
+            'unread_email_count' => 0,
             'notifications' => $request->user()?->notifications ?? [],
         ]);
     }

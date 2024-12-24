@@ -12,10 +12,11 @@ class CreatePersonForNewUserListener
     public function handle(UserCreated $userEvent): void
     {
         $user = $userEvent->model;
-        Person::create([
-            'name' => $user->name,
-            'emails' => [$user->email],
-            'names' => [$user->name],
-        ]);
+        $person = new Person;
+        $person->user_id = $user->id;
+        $person->name = $user->name;
+        $person->emails = [$user->email];
+        $person->names = [$user->name];
+        $person->save();
     }
 }

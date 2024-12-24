@@ -11,20 +11,25 @@ use App\Events\Models\Server\ServerDeleted;
 use App\Events\Models\Server\ServerDeleting;
 use App\Events\Models\Server\ServerUpdated;
 use App\Events\Models\Server\ServerUpdating;
+use App\Models\Traits\HasOwner;
 use App\Models\Traits\ScopeQSearch;
 use App\Models\Traits\ScopeRelativeSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Tags\HasTags;
 
 class Server extends Model implements Crud, ModelQuery, Taggable
 {
+    use HasApiTokens;
     use HasFactory;
     use HasTags;
+    use HasOwner;
     use LogsActivity;
     use ScopeQSearch;
     use ScopeRelativeSearch;
@@ -34,6 +39,7 @@ class Server extends Model implements Crud, ModelQuery, Taggable
         'name',
         'vcpu',
         'memory',
+        'status',
         'disk',
         'cost_per_hour',
         'ip_address',
@@ -56,6 +62,11 @@ class Server extends Model implements Crud, ModelQuery, Taggable
         'updated' => ServerUpdated::class,
     ];
 
+    public $casts = [
+        'turned_off_at' => 'datetime',
+        'booted_at' => 'datetime',
+    ];
+
     public function credential(): BelongsTo
     {
         return $this->belongsTo(Credential::class);
@@ -75,6 +86,12 @@ class Server extends Model implements Crud, ModelQuery, Taggable
         return LogOptions::defaults()
             ->logOnly(['name', 'vcpu', 'memory', 'disk', 'cost_per_hour', 'internal_url', 'last_ping_at', 'booted_at', 'turned_off_at', 'os'])
             ->useLogName('server')
+            ->dontSubmitEmptyLogs()
             ->logOnlyDirty();
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(ServerService::class);
     }
 }

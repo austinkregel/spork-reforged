@@ -1,12 +1,9 @@
 <script setup>
-
 import {ref} from "vue";
 
 const openContext = ref(false);
 const contextX = ref(0);
 const contextY = ref(0);
-
-const createTask = ref(false);
 
 const openContextMenu = (e,) => {
     if (openContext.value){
@@ -30,7 +27,7 @@ const { as } = defineProps({
 
 <template>
     <Component :is="as" @contextmenu="(e) => openContextMenu(e)">
-        <slot></slot>
+        <slot :open="openContext"></slot>
 
         <div v-if="openContext">
             <div @click="openContext = false" class="fixed inset-0 z-0 bg-stone-800/60 cusor-pointer"></div>
@@ -45,7 +42,3 @@ const { as } = defineProps({
         </div>
     </Component>
 </template>
-
-<style scoped>
-
-</style>

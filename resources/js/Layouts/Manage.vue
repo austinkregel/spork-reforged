@@ -35,6 +35,7 @@ import DynamicIcon from "@/Components/DynamicIcon.vue";
                 </Link>
             </div>
 
+
           <div class="col-span-2 lg:col-span-4 pl-8 pr-8 xl:pl-0 md:pr-8 text-black dark:text-white">
             <!-- We need to figure out a better way to get the crud actions. -->
             <slot />

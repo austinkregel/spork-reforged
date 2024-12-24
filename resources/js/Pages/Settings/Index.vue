@@ -1,41 +1,55 @@
 <script setup>
-import ContextMenuItem from "@/Components/ContextMenus/ContextMenuItem.vue";
-
-import Manage from "@/Layouts/Manage.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
-import FileOrFolder from "@/Components/Spork/FileOrFolder.vue";
-import ContextMenu from "@/Components/ContextMenus/ContextMenu.vue";
-import DialogModal from "../../../../vendor/laravel/jetstream/stubs/inertia/resources/js/Components/DialogModal.vue";
-import {ref, watch} from "vue";
-import WeatherHeader from "@/Pages/Petoskey/WeatherHeader.vue";
-import dayjs from "dayjs";
-const {
-    title,
-    notifications,
-} = defineProps({
-    title: String,
-    notifications: Array
-});
-const now = ref(dayjs());
-const updateSettings = async () => {
-    const response = await axios.post('/api/notification-settings', {
-        database: this.database,
-        mail: this.mail,
-        webhook: this.webhook,
-        broadcast: this.broadcast,
-    });
-    // handle response
-}
+import {usePage} from "@inertiajs/vue3";
+import TwoColumn from "@/Components/Spork/Molecules/Containers/Form/TwoColumn.vue";
+import FieldInput from "@/Builder/Components/Form/FieldInput.vue";
+import SporkDynamicInput from "@/Components/Spork/SporkDynamicInput.vue";
+import { ref } from 'vue';
+const page = usePage()
+
+const settings = ref([{
+    value: "",
+    name: "Website",
+},{
+    value: false,
+    name: "Is Active",
+}]);
 </script>
-
 <template>
-  <AppLayout :title="title">
-      <!-- Notification management -->
-      <div class="bg-white dark:bg-stone-950 rounded shadow p-4 m-4">
+    <AppLayout>
 
+        <template #default>
+            <div>
+                <div class="mx-16 mt-8">
+                <TwoColumn
+                    title="Activity Log"
+                    description="Basic CRUD edit tracking across the application."
+                    >
+                    <template #default>
+                        <div>
+                            <div v-for="(setting, i) in settings" class="sm:col-span-4">
+                                <SporkDynamicInput
+                                    v-model="settings[i]"
+                                />
 
-      </div>
-  </AppLayout>
+                            </div>
+
+                        </div>
+                    </template>
+                </TwoColumn>
+                </div>
+                <div class="py-4" v-for="(data, index) in page.props.settings.configs">
+                    <div class="text-2xl py-2">{{index}}</div>
+
+                    <div v-if="typeof data !== 'string'" v-for="(value, key) in data">{{index}}.{{ key }}: {{ value }}</div>
+
+                    <div v-else>{{index}}: {{ data }}</div>
+                </div>
+
+                <pre>{{ page.props.settings.configs }}</pre>
+            </div>
+        </template>
+    </AppLayout>
 </template>
 
 <style scoped>

@@ -92,6 +92,62 @@ class ImapCredentialService implements ImapServiceContract
             ->values()
             ->tap(fn () => imap_close($inbox));
     }
+    public function findAllUnseen(string $mailbox): Collection
+    {
+        return collect(imap_search($inbox = imap_open(
+            sprintf('%s%s', $this->buildMailboxString(), $mailbox),
+            $this->credential->settings['username'],
+            $this->credential->settings['password'],
+        ),
+            sprintf(' SEEN')
+        ))
+            ->map(function ($messageNumber) use ($inbox) {
+                $headers = Str::of($headerRaw = imap_fetchheader($inbox, $messageNumber))
+                    ->explode("\r\n")
+                    ->filter()
+                    ->reduce(fn ($lines, $line) => array_merge(
+                        $lines,
+                        [explode(': ', $line, 2)[0] => explode(': ', $line, 2)[1] ?? null]
+                    ), []);
+
+                $rfcHeaders = imap_rfc822_parse_headers($headerRaw);
+                $body = null;
+                $overview = Arr::first(imap_fetch_overview($inbox, (string) $messageNumber));
+
+                try {
+                    Carbon::parse($headers['X-Pm-Date']);
+                } catch (\Throwable $e) {
+                    dd($headers);
+                }
+
+                if (empty($headers['To'])) {
+                    // ew
+                    $headers['To'] = $headers['Delivered-To'];
+                }
+
+                // Many of these headers are probably specific to me using proton mail... It may not work for everyone...
+                return [
+                    'id' => imap_uid($inbox, $messageNumber),
+                    'to' => $this->extractEmailAndName($headers['To']),
+                    'addressed-to' => $this->extractEmailAndName($headers['X-Simplelogin-Envelope-To'] ?? $headers['X-Original-To'] ?? null),
+                    'addressed-from' => $this->extractEmailAndName($rfcHeaders->fromaddress ?? $headers['X-Pm-External-Id'] ?? null),
+                    'date' => Carbon::parse($headers['X-Pm-Date']),
+                    'human_date' => Carbon::parse($headers['X-Pm-Date'])->fromNow(),
+                    'subject' => imap_utf8($headers['Subject']),
+                    'from' => $this->extractEmailAndName($rfcHeaders->senderaddress ?? $rfcHeaders->fromaddress ?? $headers['From'], $headers),
+                    'reply-to' => $this->extractEmailAndName($rfcHeaders->reply_toaddress ?? $headers['Reply-To']),
+                    'spam' => intval($headers['X-Pm-Spamscore'] ?? 0),
+                    'seen' => (bool) $overview->seen ?? false,
+                    'deleted' => (bool) $overview->deleted ?? false,
+                    'answered' => (bool) $overview->answered ?? false,
+                    'recent' => (bool) $overview->recent ?? false,
+                    'draft' => (bool) $overview->draft ?? false,
+                ];
+            })
+            ->sortByDesc('date')
+            ->values()
+            ->tap(fn () => imap_close($inbox));
+    }
 
     public function findMessage(string $messageNumber, bool $peak = true): array
     {

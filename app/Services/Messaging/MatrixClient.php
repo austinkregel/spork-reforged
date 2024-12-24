@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Http;
 class MatrixClient
 {
     public function __construct(
-        protected string $user,
         protected string $homeserver = 'beeper.com',
     ) {
     }
@@ -72,6 +71,23 @@ class MatrixClient
 
             return $request;
         });
+    }
+
+    public function loginWithPassword(string $username, string $password): array
+    {
+        $request = Http::withHeaders([
+            'Accept' => 'application/json',
+        ])->post(config('services.matrix.url').'/_matrix/client/v3/login', [
+            'identifier' => [
+                'type' => 'm.id.user',
+                'user' => $username,
+            ],
+            'initial_device_display_name' => config('app.name'),
+            'password' => $password,
+            'type' => 'm.login.password',
+        ])->json();
+
+        return $request;
     }
 
     public function loginWithBeeperCode(string $email, string $code): array

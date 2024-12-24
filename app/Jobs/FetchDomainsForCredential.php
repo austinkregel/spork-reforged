@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Jobs\Domains\CloudflareSyncAndPurgeJob;
+use App\Jobs\Domains\DigitalOceanDomainsSyncJob;
 use App\Models\Credential;
 use App\Models\User;
 use Illuminate\Bus\Batchable;
@@ -45,6 +46,7 @@ class FetchDomainsForCredential implements ShouldQueue
 
         $this->batch()->add([match ($this->credential->service) {
             Credential::CLOUDFLARE => new CloudflareSyncAndPurgeJob($this->credential, $this->user),
+            Credential::DIGITAL_OCEAN => new DigitalOceanDomainsSyncJob($this->credential, $this->user),
         }]);
     }
 }

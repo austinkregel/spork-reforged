@@ -13,6 +13,7 @@ use App\Events\Models\Script\ScriptUpdating;
 use App\Models\Crud;
 use App\Models\Traits\ScopeQSearch;
 use App\Models\Traits\ScopeRelativeSearch;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,6 +23,13 @@ class Script extends Model implements Crud
     use ScopeQSearch;
     use ScopeRelativeSearch;
 
+    protected $fillable = [
+        'name',
+        'language',
+        'script',
+        'user_id',
+    ];
+
     public $dispatchesEvents = [
         'created' => ScriptCreated::class,
         'creating' => ScriptCreating::class,
@@ -30,4 +38,9 @@ class Script extends Model implements Crud
         'updating' => ScriptUpdating::class,
         'updated' => ScriptUpdated::class,
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

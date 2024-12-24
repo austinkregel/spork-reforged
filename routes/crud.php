@@ -24,6 +24,7 @@ if (! function_exists('developerRoute')) {
             Route::post($name.'/{'.$name.'}/restore', [\App\Http\Controllers\Spork\LocalAdminController::class, 'restore'])->name($name.'.restore');
             // Soft-deleting
             Route::delete($name.'/{'.$name.'}', [\App\Http\Controllers\Spork\LocalAdminController::class, 'destroy'])->name($name.'.destroy');
+            Route::delete($name.'/{'.$name.'}/many', [\App\Http\Controllers\Spork\LocalAdminController::class, 'destroyMany'])->name($name.'.destroyMany');
             // Force delete
             Route::delete($name.'/{'.$name.'}/force', [\App\Http\Controllers\Spork\LocalAdminController::class, 'forceDestroy'])->name($name.'.forceDestroy');
             Route::post($name.'/{'.$name.'}/tags', [\App\Http\Controllers\Spork\LocalAdminController::class, 'tag'])->name($name.'.tags');

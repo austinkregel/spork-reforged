@@ -80,4 +80,9 @@ class AdminController extends Controller
             'mail' => '',
         ]);
     }
+
+    public function index()
+    {
+
+    }
 }

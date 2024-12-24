@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Spork;
 use App\Services\Development\DescribeTableService;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Spatie\Activitylog\Models\Activity;
 
 class ManageController
 {
@@ -17,11 +18,19 @@ class ManageController
             'description' => [
                 'fillable' => [],
             ],
+            'metrics' => Activity::latest()
+                ->paginate(
+                    request('limit', 15),
+                    ['*'],
+                    'manage_page',
+                    request('manage_page', 1)
+                ),
         ]);
     }
 
     public function show($model)
     {
+        $table = (new $model)->getTable();
         $description = (new DescribeTableService())->describe(new $model);
 
         /** @var \Illuminate\Pagination\LengthAwarePaginator $paginator */
@@ -38,13 +47,13 @@ class ManageController
 
         unset($paginator['data']);
 
-        return Inertia::render('Manage/Index', [
-            'title' => 'CRUD '.Str::ucfirst(str_replace('_', ' ', Str::ascii((new $model)->getTable(), 'en'))),
+        return Inertia::render('Manage/List', [
+            'title' => 'CRUD '.Str::ucfirst(str_replace('_', ' ', Str::ascii($table, 'en'))),
             'description' => $description,
-            'singular' => Str::singular((new $model)->getTable()),
-            'plural' => Str::plural((new $model)->getTable()),
-            'link' => '/'.(new $model)->getTable(),
-            'apiLink' => '/api/crud/'.(new $model)->getTable(),
+            'singular' => Str::singular($table),
+            'plural' => Str::plural($table),
+            'link' => '/'.$table,
+            'apiLink' => '/api/crud/'.$table,
             'data' => $data,
             'paginator' => $paginator,
         ]);

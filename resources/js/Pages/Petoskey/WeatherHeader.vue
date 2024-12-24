@@ -10,7 +10,7 @@ defineProps({
 </script>
 
 <template>
-    <div id="weather" class="flex flex-wrap items-center gap-4 my-0 md:my-4 lg:my-6 w-full dark:text-white py-2">
+    <div id="weather" v-if="weather" class="flex flex-wrap items-center gap-4 my-0 md:my-4 lg:my-6 w-full dark:text-white py-2">
         <div class="w-24 md:w-32 lg:w-64 justify-center items-center flex flex-col py-0">
             <div class="flex align-top items-center">
                 <span id="temp" class="text-4xl lg:text-7xl ">{{weather.temperature}}</span>

@@ -13,14 +13,12 @@ use App\Events\Models\Project\ProjectUpdated;
 use App\Events\Models\Project\ProjectUpdating;
 use App\Models\Traits\ScopeQSearch;
 use App\Models\Traits\ScopeRelativeSearch;
-use App\Services\SshKeyGeneratorService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Tags\HasTags;
@@ -49,23 +47,6 @@ class Project extends Model implements Crud, ModelQuery, Taggable
         return [
             'settings' => 'json',
         ];
-    }
-
-    public function domains(): MorphToMany
-    {
-        return $this->morphedByMany(
-            Domain::class, 'resource',
-            'project_resources'
-        );
-    }
-
-    public function servers(): MorphToMany
-    {
-        return $this->morphedByMany(
-            Server::class,
-            'resource',
-            'project_resources'
-        );
     }
 
     public function research(): MorphToMany
@@ -98,9 +79,14 @@ class Project extends Model implements Crud, ModelQuery, Taggable
         );
     }
 
-    public function team(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsTo(User::class);
+    }
+
+    public function deployments(): HasMany
+    {
+        return $this->hasMany(Deployment::class);
     }
 
     public function tasks(): HasMany
@@ -111,36 +97,6 @@ class Project extends Model implements Crud, ModelQuery, Taggable
     public function credentialFor(string $service): ?Credential
     {
         $credential = $this->credentials()->where('service', $service)->first();
-
-        if (! $credential) {
-            if ($service === Credential::TYPE_SSH) {
-                $randomName = Str::random(16);
-
-                $generatorService = new SshKeyGeneratorService(
-                    privateKeyFile: $privateKeyFile = storage_path('app/keys/'.$randomName.'.key'),
-                    publicKeyFile: $publicKeyFile = storage_path('app/keys/'.$randomName.'.pub'),
-                    passKey: $passKey = ''//''tr::random(16),
-                );
-
-                $credential = $this->credentials()->create([
-                    'service' => Credential::TYPE_SSH,
-                    'type' => Credential::TYPE_SSH,
-                    'name' => 'Forge',
-                    'user_id' => auth()->id(),
-                    'settings' => [
-                        'pub_key' => $generatorService->getPublicKey(),
-                        'pub_key_file' => $publicKeyFile,
-                        'private_key' => $generatorService->getPrivateKey(),
-                        'private_key_file' => $privateKeyFile,
-                        'pass_key' => encrypt($passKey),
-                    ],
-                ]);
-
-                return $credential;
-            }
-
-            throw new \Exception('No credential found for '.$service);
-        }
 
         return $credential;
     }
@@ -155,6 +111,7 @@ class Project extends Model implements Crud, ModelQuery, Taggable
         return LogOptions::defaults()
             ->logOnly(['name', 'team_id'])
             ->useLogName('project')
+            ->dontSubmitEmptyLogs()
             ->logOnlyDirty();
     }
 }

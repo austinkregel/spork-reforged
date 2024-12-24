@@ -16,7 +16,8 @@ class BankingController
     {
         $accounts = request()->user()
             ->accounts()
-            ->with('credential')->get();
+            ->with('credential')
+            ->get();
 
         return Inertia::render('Banking/Index', [
             'title' => 'Banking ',

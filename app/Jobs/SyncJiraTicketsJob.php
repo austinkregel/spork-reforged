@@ -9,11 +9,12 @@ use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use JiraRestApi\Issue\Issue;
 
 class SyncJiraTicketsJob implements ShouldQueue
 {
-    use Queueable;
+    use Dispatchable, Queueable;
 
     public function handle(JiraServiceContract $jiraService): void
     {

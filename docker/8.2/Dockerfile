@@ -31,6 +31,19 @@ RUN groupadd -g139 -f libvirt && usermod -a -G libvirt sail
 RUN groupadd kvm && usermod -a -G kvm sail
 
 
-EXPOSE 8000
+RUN apt-get update \
+    && apt-get install -y cron screen
+
+COPY basecron /etc/cron.d/basecron
+# Give execution rights on the cron job
+RUN chmod 0644 /etc/cron.d/basecron
+
+RUN crontab /etc/cron.d/basecron
+# So I want to remove the cron service from the container, because
+# I'll have supervisord running the cron service for better logging.
+RUN update-rc.d cron remove
+
+EXPOSE 6001
+EXPOSE 80
 
 ENTRYPOINT ["start-container"]

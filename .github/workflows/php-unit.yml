@@ -19,10 +19,10 @@ jobs:
           touch storage/logs/crontab.log
           touch storage/logs/horizon.log
           touch database/database.sqlite
-          npm install
+          ./bin/sail npm install
           cp .env.ci .env
           ./bin/sail up -d
-          npm run build
+          ./bin/sail npm run build
       - name: Run tests
         run: |
           ./bin/sail art key:generate

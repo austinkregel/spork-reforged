@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Spork;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProjectRequest;
 use App\Models\Project;
 use App\Models\Research;
 use App\Models\Task;
+use App\Services\Development\DescribeTableService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,8 +19,7 @@ class ProjectsController extends Controller
     {
         $model = \App\Models\Project::class;
         /** @var \Illuminate\Pagination\LengthAwarePaginator $paginator */
-        $paginator = $model::query()
-            ->where('team_id', auth()->user()->current_team_id)
+        $paginator = auth()->user()->personalProjects()
             ->paginate(request('limit', 15), ['*'], 'page', request('page', 1));
 
         $data = $paginator->items();
@@ -35,12 +36,13 @@ class ProjectsController extends Controller
     public function show(Project $project)
     {
         $project->load([
-            'servers.tags',
-            'domains.records',
             'pages.domain',
             'research',
             'credentials',
-            'domains',
+            'deployments.domain',
+            'deployments.server',
+            'deployments.domains',
+            'deployments.servers',
         ]);
 
         return Inertia::render('Projects/Project', [
@@ -118,8 +120,6 @@ class ProjectsController extends Controller
         //    request()
         request()->validate([
             'resource_type' => \Illuminate\Validation\Rule::in([
-                \App\Models\Server::class,
-                \App\Models\Domain::class,
                 \App\Models\Credential::class,
                 \App\Models\Page::class,
                 Research::class,
@@ -150,8 +150,6 @@ class ProjectsController extends Controller
         //    request()
         request()->validate([
             'resource_type' => \Illuminate\Validation\Rule::in([
-                \App\Models\Server::class,
-                \App\Models\Domain::class,
                 \App\Models\Credential::class,
                 \App\Models\Page::class,
                 Research::class,
@@ -168,6 +166,19 @@ class ProjectsController extends Controller
 
     public function create()
     {
-        return Inertia::render('Projects/Create');
+        $description = (new DescribeTableService)->describe(new Project());
+
+        return Inertia::render('Projects/Create', [
+            'description' => $description,
+        ]);
+    }
+
+    public function store(StoreProjectRequest $request)
+    {
+        $project = new Project;
+        $project->forceFill($request->all());
+        $project->save();
+
+        return redirect()->route('projects.show', $project);
     }
 }

@@ -14,16 +14,15 @@ window.axios = axios;
 window.axios.defaults.withCredentials = true;
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-
 window.axios.interceptors.request.use(function (config) {
     return config;
 }, function (error) {
+    playSound('error');
     const status = error?.response?.status
     if (status === 401) {
         window.location = "/login"
         return Promise.reject(error);
     }
-
     if (status === 403) {
         toaster.error('You do not have permission to perform this action.');
     } else  if (status === 404) {

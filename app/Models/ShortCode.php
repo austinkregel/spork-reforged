@@ -10,13 +10,20 @@ use App\Events\Models\ShortCode\ShortCodeDeleted;
 use App\Events\Models\ShortCode\ShortCodeDeleting;
 use App\Events\Models\ShortCode\ShortCodeUpdated;
 use App\Events\Models\ShortCode\ShortCodeUpdating;
+use App\Models\Traits\ScopeQSearch;
+use App\Models\Traits\ScopeRelativeSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ShortCode extends Model
+//use Laravel\Scout\Searchable;
+
+class ShortCode extends Model implements Crud
 {
+    //    use Searchable;
     use HasFactory;
+    use ScopeQSearch;
+    use ScopeRelativeSearch;
 
     public $fillable = [
         'short_code',

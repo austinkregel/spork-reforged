@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Contracts\Repositories\CredentialRepositoryContract;
+use App\Contracts\Services\Documents\PdfParserServiceContract;
 use App\Contracts\Services\ImapServiceContract;
 use App\Contracts\Services\JiraServiceContract;
 use App\Contracts\Services\NamecheapServiceContract;
 use App\Contracts\Services\News\NewsServiceContract;
 use App\Contracts\Services\PlaidServiceContract;
 use App\Contracts\Services\WeatherServiceContract;
+use App\Features;
 use App\Models\Credential;
 use App\Models\Domain;
 use App\Models\Navigation;
@@ -27,13 +29,16 @@ use App\Observers\ApplyCredentialsObserver;
 use App\Operations\Operator;
 use App\Repositories\CredentialRepository;
 use App\Services\Code;
+use App\Services\Documents\PdfParserService;
 use App\Services\Finance\PlaidService;
 use App\Services\JiraService;
 use App\Services\Messaging\ImapCredentialService;
 use App\Services\News\NewsService;
 use App\Services\Registrar\NamecheapService;
 use App\Services\Weather\OpenWeatherService;
+use App\Spork;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Request;
@@ -42,6 +47,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Laravel\Pennant\Feature;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\Finder\SplFileInfo;
 
@@ -83,14 +89,17 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(WeatherServiceContract::class, OpenWeatherService::class);
         $this->app->bind(JiraServiceContract::class, JiraService::class);
         $this->app->alias(Operator::class, 'operator');
+        $this->app->bind(PdfParserServiceContract::class, PdfParserService::class);
+        $this->app->singleton(Spork::class, fn () => new Spork());
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-
+        foreach (config('spork.features') as $feature => $activate) {
+            if ($activate) {
+                Feature::for(auth()->user())->load($feature);
+            }
+        }
         $this->bootRoute();
     }
 
@@ -98,8 +107,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Route::macro('domains', function (array $domains, $callback) {
             foreach ($domains as $domain) {
-                Route::domain($domain)->group($callback)->name($domain);
+                Route::domain($domain)
+                    ->name($domain)
+                    ->group($callback);
             }
+            return $this;
         });
 
         RateLimiter::for('api', function (Request $request) {

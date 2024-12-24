@@ -15,7 +15,7 @@ const icons = computed(() => {
       ArticleIcon: activeIconSet.NewspaperIcon,
       ConditionIcon: activeIconSet.CodeBracketIcon,
       CredentialIcon: activeIconSet.LockClosedIcon,
-      DomainIcon: activeIconSet.LinkIcon,
+      DomainIcon: activeIconSet.GlobeAsiaAustraliaIcon,
       ExternalRssFeedIcon: activeIconSet.RssIcon,
       AccountIcon: activeIconSet.BuildingOfficeIcon,
       BudgetIcon: activeIconSet.WalletIcon,
@@ -28,6 +28,12 @@ const icons = computed(() => {
       ThreadIcon: activeIconSet.ChatBubbleLeftRightIcon,
       ClipboardIcon: activeIconSet.ClipboardIcon,
       EmailIcon: activeIconSet.EnvelopeIcon,
+      ArrowTopRightOnSquareIcon: activeIconSet.ArrowTopRightOnSquareIcon,
+      AssetIcon: activeIconSet.ArchiveBoxIcon,
+      DomainRecordIcon: activeIconSet.LinkIcon,
+      TransactionIcon: activeIconSet.RectangleStackIcon,
+      ShortCodeIcon: activeIconSet.QrCodeIcon,
+      TaskIcon: activeIconSet.QueueListIcon
   }
 })
 </script>

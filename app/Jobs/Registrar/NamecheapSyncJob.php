@@ -17,8 +17,10 @@ class NamecheapSyncJob extends AbstractSyncRegistrarResourceJob
             $domains = $this->service->getDomains(100, $page++);
 
             foreach ($domains as $domain) {
-                $localDomain = Domain::where('credential_id', $this->credential->id)
-                    ->where('domain_id', $domain['id'])
+                $localDomain = Domain::query()
+                    ->withoutGlobalScope('active')
+                    ->where('credential_id', $this->credential->id)
+                    ->where('name', $domain['domain'])
                     ->first();
 
                 $data = [
@@ -26,12 +28,13 @@ class NamecheapSyncJob extends AbstractSyncRegistrarResourceJob
                     'domain_id' => $domain['id'],
                     'registered_at' => $domain['created_at'],
                     'expires_at' => $domain['expires_at'],
-                    'verification_key' => 'reforged_'.Str::random(48),
                 ];
 
                 if (empty($localDomain)) {
                     $localDomain = new Domain;
                     $localDomain->credential_id = $this->credential->id;
+                    $localDomain->verification_key = 'reforged_'.Str::random(48);
+
                 }
 
                 foreach ($data as $key => $value) {

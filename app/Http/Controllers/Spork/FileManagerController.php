@@ -4,34 +4,39 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Spork;
 
+use Illuminate\Filesystem\Filesystem;
+use Inertia\Inertia;
+
 class FileManagerController
 {
     public function __invoke()
     {
         $filesystem = \Illuminate\Support\Facades\Storage::disk(config('spork.filesystem.default'));
 
+        $path = base64_decode(request()->input('path', base64_encode('')));
+
         return Inertia::render('FileManager', [
-            'files' => array_map(
+            'files' => collect(array_map(
                 fn ($file) => [
                     'name' => basename($file),
                     'file_path' => base64_encode('/'.$file),
+                    'path' => $file,
                     'is_directory' => false,
                     'type' => 'file',
                     'last_modified' => \Carbon\Carbon::parse($filesystem->lastModified($file)),
                 ],
-                $filesystem->files()
-            ),
-            'directories' => array_map(
+                $filesystem->files($path)
+            ))->sortBy('name')->values(),
+            'directories' => collect(array_map(
                 fn ($file) => [
                     'name' => basename($file),
                     'file_path' => base64_encode('/'.$file),
                     'is_directory' => true,
                     'type' => 'folder',
-                    'last_modified' => \Carbon\Carbon::parse($filesystem->lastModified($file)),
+                    'path' => $file,
                 ],
-                $filesystem->directories()
-            ),
-
+                $filesystem->directories($path)
+            ))->sortBy('name')->values(),
         ]);
     }
 
@@ -57,5 +62,24 @@ class FileManagerController
         }
 
         return file_get_contents($decoded);
+    }
+
+    public function update($path)
+    {
+        $decoded = base64_decode($path);
+
+        $filesystem = new Filesystem();
+
+        $content = request()->input('content');
+        $existingFile = $filesystem->get($decoded);
+
+        if ($content === $existingFile) {
+            return response()->json(['message' => 'No changes made']);
+        }
+
+        dd($decoded, $content, $existingFile, request()->all());
+        $filesystem->put($decoded, request()->input('content'));
+
+        return response()->json(['message' => 'File updated']);
     }
 }

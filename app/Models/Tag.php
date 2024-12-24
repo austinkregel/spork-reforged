@@ -33,6 +33,8 @@ class Tag extends \Spatie\Tags\Tag implements Conditionable, Crud, ModelQuery
 
     public $fillable = ['name', 'slug', 'must_all_conditions_pass', 'type', 'order_column'];
 
+    public $casts = ['name' => 'json'];
+
     public $dispatchesEvents = [
         'created' => TagCreated::class,
         'creating' => TagCreating::class,

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\Credential;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCredentialRequest extends FormRequest
 {
@@ -13,7 +16,10 @@ class StoreCredentialRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        /** @var User $user */
+        $user = $this->user();
+
+        return $user->can('create_credentials');
     }
 
     /**
@@ -24,7 +30,31 @@ class StoreCredentialRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'name' => 'required|string',
+            'type' => [
+                'required',
+                'string',
+                Rule::in([
+                    Credential::TYPE_REGISTRAR,
+                    Credential::TYPE_DOMAIN,
+                    Credential::TYPE_SERVER,
+                    Credential::TYPE_DEVELOPMENT,
+                    Credential::TYPE_FINANCE,
+                    Credential::TYPE_EMAIL,
+                ]),
+            ],
+            'service' => [
+                'required',
+                'string',
+                Rule::in(Credential::ALL_SERVER_PROVIDERS),
+            ],
+            'api_key' => 'nullable',
+            'secret_key' => 'nullable',
+            'access_token' => 'nullable|string',
+            'refresh_token' => 'nullable|string',
+            'settings' => [],
+            'settings.*' => 'nullable|string',
+            'enabled_on' => 'nullable|date',
         ];
     }
 }

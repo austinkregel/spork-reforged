@@ -9,6 +9,7 @@ use App\Jobs\FetchResourcesFromCredential;
 use App\Models\Credential;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
 
 class SyncDataFromCredential extends CustomAction implements ActionInterface
 {
@@ -19,10 +20,19 @@ class SyncDataFromCredential extends CustomAction implements ActionInterface
 
     public function __invoke(Dispatcher $dispatcher, Request $request)
     {
-        $credentials = Credential::where('user_id', $request->user()->id)->whereIn('id', $request->get('items'))->get();
+        $credentials = Credential::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('id', $request->get('items'))
+            ->whereNotIn('type', [
+                // These aren't managed by a syncing php process.
+                'matrix',
+                'ssh',
+            ])
+            ->get();
 
         foreach ($credentials as $credential) {
-            $dispatcher->dispatch(new FetchResourcesFromCredential($credential));
+            Bus::batch([new FetchResourcesFromCredential($credential)])
+                ->dispatch();
         }
     }
 }
