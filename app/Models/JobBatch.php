@@ -11,6 +11,8 @@ class JobBatch extends Model
 {
     use HasFactory;
 
+    public $incrementing = false;
+
     public $fillable = [
         'id',
         'name',
@@ -22,6 +24,10 @@ class JobBatch extends Model
         'cancelled_at',
         'created_at',
         'finished_at',
+    ];
+
+    protected $casts = [
+        'failed_job_ids' => 'json',
     ];
 
     public $dispatchesEvents = [

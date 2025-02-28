@@ -19,13 +19,14 @@ class SummaryNotification extends Notification
         // Transactions from a period,
         // domain expirations
         public ?array $articles,
+        public ?Forecast $forecast,
     ) {
         //
     }
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', 'broadcast'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -35,6 +36,7 @@ class SummaryNotification extends Notification
             'emails.daily.summary',
             [
                 'articles' => $this->articles,
+                'weather' => $this->forecast,
             ]
         );
 

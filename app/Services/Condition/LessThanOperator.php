@@ -20,7 +20,7 @@ class LessThanOperator extends AbstractLogicalOperator
                 return Carbon::parse($valueFromCondition)->isBefore(Carbon::parse($valueFromParameter));
             }
 
-            return strlen($valueFromCondition) < strlen($valueFromParameter);
+            return strlen($valueFromCondition ?? '') < strlen($valueFromParameter ?? '');
         }
 
         if (is_null($valueFromCondition)) {
@@ -29,7 +29,7 @@ class LessThanOperator extends AbstractLogicalOperator
 
         if (! is_numeric($valueFromCondition)) {
             // At the time of writing, I'm not sure what could end up here other than maybe objects/arrays?
-            $valueFromCondition = strlen($valueFromCondition);
+            $valueFromCondition = strlen($valueFromCondition ?? '');
         }
 
         if (is_null($valueFromParameter)) {

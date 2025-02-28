@@ -9,7 +9,7 @@ const { description, home, subTitle } = defineProps({
   home: String,
   description: Object,
 })
-const availablePages = computed(() => page.props.current_navigation?.children?.length > 0 ? page.props.current_navigation?.children : page.props.current_navigation?.parent?.children)
+const availablePages = computed(() => page.props.subnavigation)
 
 import DynamicIcon from "@/Components/DynamicIcon.vue";
 </script>
@@ -34,6 +34,7 @@ import DynamicIcon from "@/Components/DynamicIcon.vue";
                     {{ page.name }}
                 </Link>
             </div>
+
 
           <div class="col-span-2 lg:col-span-4 pl-8 pr-8 xl:pl-0 md:pr-8 text-black dark:text-white">
             <!-- We need to figure out a better way to get the crud actions. -->

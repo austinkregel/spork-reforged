@@ -16,13 +16,13 @@ use App\Models\Traits\ScopeRelativeSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Scout\Searchable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class DomainRecord extends Model implements Crud, ModelQuery
 {
     use HasFactory;
-    use LogsActivity;
     use ScopeQSearch;
     use ScopeRelativeSearch;
 
@@ -59,6 +59,7 @@ class DomainRecord extends Model implements Crud, ModelQuery
         return LogOptions::defaults()
             ->logFillable()
             ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
             ->useLogName('domain-record');
     }
 }

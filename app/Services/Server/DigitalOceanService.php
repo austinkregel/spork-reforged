@@ -8,29 +8,26 @@ use App\Contracts\Services\DigitalOceanServiceContract;
 use App\Models\Credential;
 use App\Services\Filters\DigitalOceanServerFilter;
 use DigitalOceanV2\Client;
+use DigitalOceanV2\Entity\Domain;
+use DigitalOceanV2\Entity\DomainRecord;
 use DigitalOceanV2\Entity\Droplet as DigitalOceanServer;
 use DigitalOceanV2\Entity\Key;
 use DigitalOceanV2\Entity\Region;
 use DigitalOceanV2\Entity\Region as DigitalOceanRegion;
 use DigitalOceanV2\Entity\Size as DigitalOceanSize;
-use GrahamCampbell\DigitalOcean\DigitalOceanFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class DigitalOceanService implements DigitalOceanServiceContract
 {
-    /**
-     * @var Client
-     */
-    protected $digitalOcean;
+    protected Client $digitalOcean;
 
     protected DigitalOceanServerFilter $serverFilter;
 
     public function __construct(Credential $credential)
     {
-        $this->digitalOcean = app(DigitalOceanFactory::class)->make([
-            'token' => $credential->access_token,
-            'method' => 'token',
-        ]);
+        $this->digitalOcean = app(Client::class);
+
+        $this->digitalOcean->authenticate($credential->api_key);
 
         $this->serverFilter = new DigitalOceanServerFilter();
     }
@@ -101,19 +98,45 @@ class DigitalOceanService implements DigitalOceanServiceContract
     {
         $keys = $this->digitalOcean->key()->getAll();
 
-        return array_map(function (Key $key): SshKey {
-            return new SshKey($key->toArray());
+        return array_map(function (Key $key): Key {
+            return $key->toArray();
         }, $keys);
     }
 
     public function getDomains(int $limit = 10, int $page = 1): LengthAwarePaginator
     {
-        // TODO: Implement getDomains() method.
+        $items = $this->digitalOcean->domain()->getAll();
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            array_map(function (Domain $domain) {
+                return $domain->toArray();
+            }, $items),
+            count($items),
+            $limit,
+            $page,
+        );
     }
 
-    public function getDns(string $domain, string $type = 'A', int $limit = 10, int $page = 1): LengthAwarePaginator
+    public function getDns(string $domain, string $type = '', int $limit = 10, int $page = 1): LengthAwarePaginator
     {
-        // TODO: Implement getDns() method.
+        $items = $this->digitalOcean->domainRecord()->getAll($domain);
+
+        $domains = array_map(function (DomainRecord $domain) {
+            return $domain->toArray();
+        }, $items);
+
+        if (!empty($type)) {
+            $domains = array_filter($domains, function ($domain) use ($type) {
+                return $domain['type'] === $type;
+            });
+        }
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            array_values($domains),
+            count($domains),
+            $limit,
+            $page,
+        );
     }
 
     public function deleteDnsRecord(string $domain, string $dnsRecordId): void
@@ -128,7 +151,7 @@ class DigitalOceanService implements DigitalOceanServiceContract
 
     public function getDomainNs(string $domain): array
     {
-        // TODO: Implement getDomainNs() method.
+        $this->getDns($domain, 'NS');
     }
 
     public function updateDomainNs(string $domain, array $nameservers): array

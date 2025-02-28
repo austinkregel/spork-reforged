@@ -12,13 +12,33 @@ import BuilderText from './Builder/Components/BuilderText.vue';
 import Notifications from 'notiwind';
 import Grid from './Components/Grid.vue';
 import TitleAndFooterTextCard from "./Builder/Components/Cards/TitleAndFooterTextCard.vue";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import 'dayjs/locale/en';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(relativeTime);
+dayjs.extend(utc);
+dayjs.locale('en');
+
+window.dayjs = dayjs;
 const registeredComponents = [];
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Laravel';
 
 window.Spork = {
 
 };
-
+const playSound = (name) => {
+    // glitch-sound
+    // error-sound
+    // success-sound
+    // notification-sound
+    const v = document.getElementById(name+'-sound');
+    v.volume = 0.15;
+    v.currentTime = 0;
+    v.play();
+}
+window.playSound = playSound;
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
@@ -34,7 +54,12 @@ createInertiaApp({
                 components(getters, rootGetters) {
                     return registeredComponents;
                 }
-            }
+            },
+            actions: {
+                playSound(context, name) {
+                    playSound(name);
+                }
+            },
         })
 
         const app = createApp({ render: () => h(App, props) })
@@ -85,7 +110,8 @@ createInertiaApp({
         if (props?.initialPage?.props?.auth?.user?.id) {
             const userId = props?.initialPage?.props?.auth?.user?.id;
             Echo.private(`App.Models.User.${userId}`)
-                .listen('Models.Message.MessageCreated', (e) => {
+                .listen('Models.Message.EmailCreated', (e) => {
+                    playSound('notification');
                     router.reload({
                         only: ['messages', 'unread_email_count'],
                     });
@@ -105,15 +131,44 @@ createInertiaApp({
                         only: ['job_batches', 'news']
                     })
                 })
+                .listen('Models.Server.ServerCreated', e => {
+                    router.reload({
+                        only: ['servers', 'data', 'server']
+                    })
+                })
+                .listen('Models.Server.ServerUpdating', e => {
+                    router.reload({
+                        only: ['servers', 'data', 'server']
+                    })
+                })
+                .listen('Models.Server.ServerUpdated', e => {
+                    router.reload({
+                        only: ['servers', 'data', 'server']
+                    })
+                })
+                .listen('Models.Server.ServerDeleted', e => {
+                    router.reload({
+                        only: ['servers', 'data', 'server']
+                    })
+                })
+                .notification((notification) => {
+                    playSound('notification');
+                    console.log('notification', notification);
+                })
                 .error((error) => {
                     console.error('non-fatal error', error);
-                });
+                })
         }
 
         if (props?.initialPage?.props.auth.user?.person?.id) {
             Echo.private('App.Models.Person.'+props?.initialPage?.props.auth.user?.person?.id)
                 .listen('message', (data) => {
-                    console.log('Message from server', data)
+                    console.log('Message from server', data);
+                    playSound('notification');
+                    router.reload({
+                        only: ['messages', 'unread_email_count'],
+                    });
+
                 })
                 .error((error) => {
                     console.error(error);

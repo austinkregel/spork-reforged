@@ -48,7 +48,6 @@
                                         <spork-input v-model="form.name" type="text" name="name" id="name" />
                                     </div>
 
-
                                     <div class="col-span-6">
                                         <label for="name" class="block text-sm font-medium">Type</label>
                                         <spork-select v-model="form.type" type="text" name="refresh_token" id="refresh_token">
@@ -99,8 +98,6 @@
                                         <label for="account_id" class="block text-sm font-medium">SSH Public Key</label>
                                         <spork-input ref="public_key" @change="onFileUploadForPublicKey" type="file" name="account_id" id="account_id" />
                                     </div>
-
-
                                 </div>
                             </div>
                         </template>

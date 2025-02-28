@@ -52,6 +52,12 @@ onMounted(() => {
   timeInterval.value = setInterval(() => {
     now.value = dayjs();
   }, 1000)
+
+    console.log(MetricApiCard)
+
+    return () => {
+        clearInterval(timeInterval.value)
+    }
 })
 </script>
 
@@ -99,8 +105,8 @@ onMounted(() => {
         </div>
         <div class="border-t border-stone-700 my-4"></div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mx-6">
-            <div>
+        <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4 xl:px-8 px-4">
+            <div class="">
                 <div class="text-xl tracking-wider leading-tight underline pb-4 pt-2">News</div>
                 <div class="flex-col flex max-h-[50vh] overflow-auto dark:bg-stone-800 rounded-lg divide-y dark:divide-stone-600">
                     <CollapsibleArticle v-for="article in news.data" :article="article" />
@@ -122,12 +128,13 @@ onMounted(() => {
                 <div class="flex-col flex gap-4 max-h-[50vh] overflow-auto dark:bg-stone-800 p-4 rounded-lg">
                     <div v-for="batch in job_batches.data" class="flex justify-between">
                         <div class="flex-grow text-indigo-200">
-                            <div>{{batch.name}}</div>
+                            <Link class="underline" :href="route('batch-jobs.show', [batch.id])">{{batch.name}}</Link>
                             <div class="text-xs">created {{relativeDateFormat(batch.created_at)}}</div>
                         </div>
                         <div class="flex flex-wrap gap-1">
                             <span v-if="batch.total_jobs === batch.failed_jobs" class="text-red-300">Failed</span>
                             <span v-else-if="batch.pending_jobs > 0" class="text-yellow-300">Processing {{ round(((batch.total_jobs - batch.pending_jobs) / batch.total_jobs) * 100)}}</span>
+                            <span v-else-if="batch.failed_at !== null" class="text-red-600">Failed at {{ batch.failed_at ? dateFormat(batch.failed_at): '' }}</span>
                             <span v-else-if="batch.finished_at !== null" class="text-green-400">{{ dateFormat(batch.finished_at) }}</span>
                         </div>
                     </div>

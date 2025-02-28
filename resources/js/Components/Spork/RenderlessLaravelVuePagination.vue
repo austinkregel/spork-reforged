@@ -118,7 +118,7 @@ export default {
             this.$emit('pagination-change-page', page);
         }
     },
-
+    emits: ['pagination-change-page'],
     render () {
         return ({
             data: this.data,
@@ -162,3 +162,4 @@ export default {
     }
 }
 </script>
+<template></template>

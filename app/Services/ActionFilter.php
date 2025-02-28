@@ -138,6 +138,10 @@ class ActionFilter
             $query->groupBy($this->orderByField);
         }
 
+        if ($method === 'count') {
+            return cache()->remember($query->toRawSql(), now()->addHour(), fn () => $query->count());
+        }
+
         if (count($arguments) > 0) {
             $result = $query->{$method}(...$arguments);
         } else {
@@ -145,7 +149,7 @@ class ActionFilter
         }
 
         if ($result instanceof QueryBuilder) {
-            return $result->first()->count;
+            return cache()->remember($result->toRawSql(), now()->addHour(), fn () => $result->first()->count);
         }
 
         return $result;

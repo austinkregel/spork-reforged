@@ -20,6 +20,8 @@ use App\Models\Traits\ScopeQSearch;
 use App\Models\Traits\ScopeRelativeSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property bool $must_all_conditions_pass
@@ -33,6 +35,8 @@ class Tag extends \Spatie\Tags\Tag implements Conditionable, Crud, ModelQuery
 
     public $fillable = ['name', 'slug', 'must_all_conditions_pass', 'type', 'order_column'];
 
+    public $casts = ['name' => 'json'];
+
     public $dispatchesEvents = [
         'created' => TagCreated::class,
         'creating' => TagCreating::class,
@@ -41,6 +45,13 @@ class Tag extends \Spatie\Tags\Tag implements Conditionable, Crud, ModelQuery
         'updating' => TagUpdating::class,
         'updated' => TagUpdated::class,
     ];
+
+    // all related models, regardless of type
+    public function tagged(): Builder
+    {
+        return DB::table('taggables')
+            ->where('tag_id', $this->id);
+    }
 
     public function articles(): MorphToMany
     {

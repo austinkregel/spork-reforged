@@ -1,6 +1,7 @@
 <script setup>
 import MetricCard from "@/Components/Spork/Atoms/MetricCard.vue";
 import {onMounted, ref} from "vue";
+import {router} from "@inertiajs/vue3";
 
 const { url, title } = defineProps({
     url: String,
@@ -9,17 +10,23 @@ const { url, title } = defineProps({
 
 const value = ref(null);
 const loading = ref(true);
+const error = ref(null);
 
 onMounted(() => {
     axios.get(url)
         .then(response => {
             value.value = response.data;
-        }).finally(() => {
+        }).catch(e => error.value = e.response.data.message).finally(() => {
             loading.value = false;
         });
 });
 </script>
 
 <template>
-    <MetricCard :title="title" :value="value" :loading="loading" />
+    <MetricCard
+        :title="title"
+        :value="value"
+        :loading="loading"
+        :sub-title="error"
+    />
 </template>

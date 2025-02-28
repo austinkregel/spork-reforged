@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Route;
 if (! function_exists('developerRoute')) {
     function developerRoute($name, $model)
     {
-        cache()->rememberForever($name, fn () => $model);
-
         Route::prefix('crud')->group(function () use ($name) {
             Route::get($name, [\App\Http\Controllers\Spork\LocalAdminController::class, 'index'])->name($name.'.index');
 
@@ -24,6 +22,7 @@ if (! function_exists('developerRoute')) {
             Route::post($name.'/{'.$name.'}/restore', [\App\Http\Controllers\Spork\LocalAdminController::class, 'restore'])->name($name.'.restore');
             // Soft-deleting
             Route::delete($name.'/{'.$name.'}', [\App\Http\Controllers\Spork\LocalAdminController::class, 'destroy'])->name($name.'.destroy');
+            Route::delete($name.'/{'.$name.'}/many', [\App\Http\Controllers\Spork\LocalAdminController::class, 'destroyMany'])->name($name.'.destroyMany');
             // Force delete
             Route::delete($name.'/{'.$name.'}/force', [\App\Http\Controllers\Spork\LocalAdminController::class, 'forceDestroy'])->name($name.'.forceDestroy');
             Route::post($name.'/{'.$name.'}/tags', [\App\Http\Controllers\Spork\LocalAdminController::class, 'tag'])->name($name.'.tags');

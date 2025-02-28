@@ -12,6 +12,7 @@ use App\Events\Models\Credential\CredentialDeleted;
 use App\Events\Models\Credential\CredentialDeleting;
 use App\Events\Models\Credential\CredentialUpdated;
 use App\Events\Models\Credential\CredentialUpdating;
+use App\Models\Contracts\Owner;
 use App\Models\Finance\Account;
 use App\Models\Traits\HasProjectResource;
 use App\Models\Traits\ScopeQSearch;
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Credential extends Model implements Crud, ModelQuery
+class Credential extends Model implements Crud, ModelQuery, Owner
 {
     use HasFactory;
     use HasProjectResource;
@@ -34,6 +35,7 @@ class Credential extends Model implements Crud, ModelQuery
     public const DIGITAL_OCEAN = 'digital-ocean';
 
     public const CLOUDFLARE = 'cloudflare';
+    public const TYPE_MATRIX = 'matrix';
 
     public const NAMECHEAP = 'namecheap';
 
@@ -50,6 +52,7 @@ class Credential extends Model implements Crud, ModelQuery
     public const AWS_ROUTE_53 = 'aws-route53';
 
     public const GITHUB_SOURCE = 'github';
+    public const IMAP = 'imap';
 
     public const FORGE_DEVELOPMENT = 'forge';
 
@@ -62,7 +65,6 @@ class Credential extends Model implements Crud, ModelQuery
     public const TYPE_DEVELOPMENT = 'development';
 
     public const TYPE_SOURCE = 'source';
-
     public const TYPE_FINANCE = 'finance';
 
     public const TYPE_SSH = 'ssh';
@@ -78,9 +80,10 @@ class Credential extends Model implements Crud, ModelQuery
         self::GO_DADDY,
         self::GOOGLE_DOMAINS,
         self::AWS_ROUTE_53,
+        self::TYPE_EMAIL,
     ];
 
-    public const ALL_SERVER_PROVIDERS = [self::DIGITAL_OCEAN, self::OVH_CLOUD, self::VULTR, self::LINODE];
+    public const ALL_SERVER_PROVIDERS = [self::DIGITAL_OCEAN, self::OVH_CLOUD, self::VULTR, self::LINODE, self::IMAP];
 
     public const ALL_REGISTRAR_PROVIDERS = [
         self::OVH_CLOUD,
@@ -102,6 +105,7 @@ class Credential extends Model implements Crud, ModelQuery
     public $fillable = [
         'name',
         'type',
+        'user_id',
         'service',
         'api_key',
         'secret_key',
@@ -125,7 +129,7 @@ class Credential extends Model implements Crud, ModelQuery
     protected function casts(): array
     {
         return [
-            'settings' => 'json',
+            'settings' => 'array',
         ];
     }
 
@@ -143,7 +147,7 @@ class Credential extends Model implements Crud, ModelQuery
             chmod($publicKeyFile, 0600);
         }
 
-        return $publicKeyFile;
+        return $this->settings['pub_key'] ?? '';
     }
 
     public function getPrivateKey(): string
@@ -160,7 +164,7 @@ class Credential extends Model implements Crud, ModelQuery
 
     public function getPasskey(): string
     {
-        return decrypt($this->settings['pass_key'] ?? '');
+        return empty($this->settings['pass_key'] ?? '') ? '' : decrypt($this->settings['pass_key'] ?? '');
     }
 
     public function getActivitylogOptions(): LogOptions
@@ -184,5 +188,10 @@ class Credential extends Model implements Crud, ModelQuery
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(Email::class);
     }
 }

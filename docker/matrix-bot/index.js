@@ -17,8 +17,8 @@ dotenv.config();
 let dmTarget = null
 const matrixUserName = '@'+process.env.MATRIX_USERNAME+':'+(new URL(process.env.MATRIX_HOST?.replace('matrix.', ''))).hostname;
 
-const storageProvider = new SimpleFsStorageProvider("./docker/matrix-bot/bot.json"); // or any other IStorageProvider
-const cryptoProvider = new RustSdkCryptoStorageProvider("./docker/matrix-bot/db", StoreType.Sled);
+const storageProvider = new SimpleFsStorageProvider("./docker/matrix-bot/bot-personal.json"); // or any other IStorageProvider
+const cryptoProvider = new RustSdkCryptoStorageProvider("./docker/matrix-bot/personal", StoreType.Sled);
 // In order to sync room keys, we need to ensure we can trust the devices we're getting them from.
 // We can request the list of devices, and verify their keys.
 const sequelize = new Sequelize(
@@ -60,7 +60,7 @@ async function findOrCreateMessageEvent(
         threadInQuestion = await Threads.create({
             thread_id: thread,
             name: thread,
-            origin_server_ts: dayjs(),
+            origin_server_ts: dayjs().format('YYYY-MM-DD HH:mm:ss'),
         });
         const sender = await findPersonByIdentifier(People, message?.sender);
         await Participant.create({
@@ -124,7 +124,7 @@ async function findPersonByIdentifier(People, identifier) {
         person = await People.create({
             name: identifier,
             identifiers: JSON.stringify([identifier]),
-            user_id: personSystemUser.id
+            user_id: personSystemUser?.id ?? 1
         });
     }
 
@@ -246,6 +246,9 @@ const setupSequlize = async () => {
             primaryKey: true,
             autoIncrement: true,
         },
+        user_id: {
+            type: DataTypes.BIGINT.UNSIGNED,
+        },
         name: {
             type: DataTypes.STRING(255),
             allowNull: false,
@@ -254,6 +257,7 @@ const setupSequlize = async () => {
         primary_address: DataTypes.STRING(255),
         primary_email: DataTypes.STRING(255),
         pronouns: DataTypes.STRING(255),
+        photo_url: DataTypes.STRING(255),
         birthdate: DataTypes.DATE,
         phone_numbers: {
             type: DataTypes.TEXT,
@@ -425,6 +429,10 @@ const setupSequlize = async () => {
     }
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function main() {
     try {
         const {
@@ -442,27 +450,31 @@ async function main() {
         });
         let client;
         if (!credential?.type) {
-            const auth = new MatrixAuth(process.env.MATRIX_HOST);
-            client = await auth.passwordLogin(process.env.MATRIX_USERNAME, process.env.MATRIX_PASSWORD);
-            const { user_id, device_id } = await client.getWhoAmI();
-            const user = await findPersonByIdentifier(People, matrixUserName);
+            // const auth = new MatrixAuth(process.env.MATRIX_HOST);
+            // client = await auth.passwordLogin(process.env.MATRIX_USERNAME, process.env.MATRIX_PASSWORD);
+            // const { user_id, device_id } = await client.getWhoAmI();
+            // const user = await findPersonByIdentifier(People, matrixUserName);
+            //
+            // credential = await Credential.create({
+            //     name: device_id,
+            //     type: 'matrix',
+            //     service: 'matrix',
+            //     'access_token': client.accessToken,
+            //     enabled_on: dayjs(),
+            //     user_id: user.id,
+            // });
 
-            credential = await Credential.create({
-                name: device_id,
-                type: 'matrix',
-                service: 'matrix',
-                'access_token': client.accessToken,
-                enabled_on: dayjs(),
-                user_id: user.id,
-            });
-        } else {
-            client = new MatrixClient(
-                process.env.MATRIX_HOST,
-                credential.access_token,
-                storageProvider,
-                cryptoProvider,
-            )
+            console.log('[!] Created matrix credentials for', user_id, device_id);
+            console.log('[!] Please restart the matrix client.');
+            return;
         }
+        client = new MatrixClient(
+            process.env.MATRIX_HOST,
+            credential.access_token,
+            storageProvider,
+            cryptoProvider,
+        )
+        console.log(client?.crypto?.isReady)
 
         const { user_id, device_id } = await client.getWhoAmI();
         console.log('[-]   #############################');
@@ -485,6 +497,7 @@ async function main() {
             await client.crypto.onRoomJoin(event.room_id);
         })
 
+
         client.on("room.message", async (roomId, messageEvent) => {
             // await client.upload
             console.log(roomId, 'received a new message from', messageEvent)
@@ -503,18 +516,21 @@ async function main() {
         // const cryptoSpinner = ora('Syncing joined rooms, and preparing encryption').start();
         /** @var IStorageProvider userStorage **/
         // const userStorage = await client.storageProvider.storageForUser(user_id)
-
+        //
         const rooms = await client.getJoinedRooms();
-        await client.crypto.prepare(rooms);
-
-        // cryptoSpinner.succeed('Crypto library setup, encryption ready.');
-
+        //
+        // // cryptoSpinner.succeed('Crypto library setup, encryption ready.');
+        //
         // let encryptedRoomId = null;
-        for (const roomId in rooms) {
-            if (await client.crypto.isRoomEncrypted(roomId)) {
-            }
-        }
-
+        // for (const roomId in rooms) {
+        //     if (await client.crypto.isRoomEncrypted(roomId)) {
+        //         encryptedRoomId = roomId;
+        //         break;
+        //     }
+        // }
+        //
+        await client.crypto.prepare(rooms);
+        //
         // if (!encryptedRoomId) {
         //     encryptedRoomId = await client.createRoom({
         //         invite: [dmTarget],
@@ -532,7 +548,7 @@ async function main() {
         //     });
         // }
 
-        console.log('[-] ready', client.crypto.isReady);
+        console.log('[-] ready', client.crypto?.isReady);
         console.log('[-]', await client.checkOneTimeKeyCounts());
 
         const { one_time_keys } = await client.claimOneTimeKeys({
@@ -552,47 +568,48 @@ async function main() {
         // console.log('[-] Finished setting up crypto lib');
         // // await client.begin();
         console.log('[-] Started');
-        // const resp = await client.uploadDeviceOneTimeKeys(one_time_keys[user_id][device_id])
+        const resp = await client.uploadDeviceOneTimeKeys(one_time_keys[user_id][device_id])
 
-        // console.log('Thing has started', device_id, user_id, resp);
+        console.log('Thing has started', device_id, user_id, resp);
         // const spinner = ora('Loading message history from all the threads').start();
-        // for (let index in rooms) {
-        //     const roomId = rooms[index];
-        //     const state = await client.getRoomState(roomId);
+        for (let index in rooms) {
+            const roomId = rooms[index];
+            const state = await client.getRoomState(roomId);
 
-        //     await processRoomState(state, {
-        //         client,
-        //         roomId,
-        //         Threads,
-        //         Messages,
-        //         People,
-        //         Participant,
-        //     });
+            await processRoomState(state, {
+                client,
+                roomId,
+                Threads,
+                Messages,
+                People,
+                Participant,
+            });
 
-        //     const isEncrypted = await client.crypto.isRoomEncrypted(roomId);
-        //     const roomState = await cryptoProvider.getRoom(roomId);
-        //     if (isEncrypted && !roomState) {
-        //         const encryption = await client.getRoomStateEvent(roomId, 'm.room.encryption')
-        //         const history_visibility = await client.getRoomStateEvent(roomId, 'm.room.history_visibility')
-        //         const guest_access = await client.getRoomStateEvent(roomId, 'm.room.guest_access')
+            const isEncrypted = await client.crypto.isRoomEncrypted(roomId);
+            const roomState = await cryptoProvider.getRoom(roomId);
+            if (isEncrypted && !roomState) {
+                const encryption = await client.getRoomStateEvent(roomId, 'm.room.encryption')
+                const history_visibility = await client.getRoomStateEvent(roomId, 'm.room.history_visibility')
+                const guest_access = await client.getRoomStateEvent(roomId, 'm.room.guest_access')
 
-        //         await client.cryptoStore.storeRoom(roomId, {
-        //             ...encryption,
-        //             ...history_visibility,
-        //             ...guest_access,
-        //         });
-        //     }
+                await client.cryptoStore.storeRoom(roomId, {
+                    ...encryption,
+                    ...history_visibility,
+                    ...guest_access,
+                });
+            }
 
-        //     spinner.stopAndPersist({
-        //         text: "✔️ " + index + '/' + rooms.length + ' History sync: ' + roomId,
-        //     });
-        // }
+            // spinner.stopAndPersist({
+            //     text: "✔️ " + index + '/' + rooms.length + ' History sync: ' + roomId,
+            // });
+        }
 
         // spinner.succeed('Starting the matrix clint')
         await client.start();
         // }
     } catch (error) {
-        console.error("Error:", error.message ?? error?.body ?? 'nothing defined I guess', error);
+
+        console.error("Error in catch block on 606:", (error.message ?? error?.body).toString('utf-8'), error);
     }
 }
 
@@ -621,7 +638,7 @@ async function processRoomState(state, {
                 await Threads.create({
                     name: roomId,
                     thread_id: roomId,
-                    originated_at: dayjs(event.origin_server_ts),
+                    origin_server_ts: dayjs(event.origin_server_ts),
                 });
                 break;
             case 'm.room.name':
@@ -629,9 +646,6 @@ async function processRoomState(state, {
                     where: {thread_id: event.room_id}
                 });
 
-                if (test) {
-                    continue;
-                }
                 await Threads.update({name: event.content.name}, {
                     where: {thread_id: roomId}
                 });
@@ -649,7 +663,7 @@ async function processRoomState(state, {
                     await People.create({
                         name: event.content?.displayname ?? event.sender,
                         identifiers: JSON.stringify([event.sender]),
-                        user_id: personSystemUser.id
+                        user_id: personSystemUser?.id ?? 1
                     })
                 }
                 matchingPeople = await sequelize.query('select * from people where json_contains(identifiers, ?, \'$\')', {
@@ -664,43 +678,54 @@ async function processRoomState(state, {
                     let thread = await Threads.findOne({
                         where: {thread_id: event.room_id}
                     });
-                    let participant = await sequelize.query('select * from thread_participants where person_id = ? and thread_id = ?', {
-                        replacements: [JSON.stringify(person.id), JSON.stringify(thread.id)],
-                        type: QueryTypes.SELECT,
-                    });
 
-                    if (participant.length === 0) {
-                        await Participant.create({
-                            person_id: person.id,
-                            thread_id: thread.id,
-                            joined_at: dayjs(event.origin_server_ts),
-                        })
-                        participant = await sequelize.query('select * from thread_participants where person_id = ? and thread_id = ?', {
-                            replacements: [JSON.stringify(person.id), JSON.stringify(thread.id)],
+                    if (thread?.id) {
+                        let participant = await sequelize.query('select * from thread_participants where person_id = ? and thread_id = ?', {
+                            replacements: [
+                                JSON.stringify(person.id),
+                                JSON.stringify(thread.id)
+                            ],
                             type: QueryTypes.SELECT,
                         });
+
+                        if (participant.length === 0) {
+                            await Participant.create({
+                                person_id: person.id,
+                                thread_id: thread.id,
+                                joined_at: dayjs(event.origin_server_ts),
+                            })
+                            participant = await sequelize.query('select * from thread_participants where person_id = ? and thread_id = ?', {
+                                replacements: [JSON.stringify(person.id), JSON.stringify(thread.id)],
+                                type: QueryTypes.SELECT,
+                            });
+                        }
                     }
 
                     if (event.content?.avatar_url) {
                         let contentType = 'jpg';
-                        const data = await client.downloadContent(event.content?.avatar_url);
+                        try {
+                            const data = await client.downloadContent(event.content?.avatar_url);
 
-                        if (!data.data) {
-                            continue;
-                        }
+                            if (!data.data) {
+                                continue;
+                            }
 
-                        const id = person.id
-                        contentType = data.contentType.split('/')[1];
+                            const id = person.id
+                            contentType = data.contentType.split('/')[1];
 
-                        if (!fs.existsSync('./storage/app/' + id + '.' + contentType)) {
-                            const path = './storage/app/' + id + '.' + contentType;
-                            fs.writeFileSync(path, data.data)
+                            if (!fs.existsSync('./storage/app/public/' + id + '.' + contentType)) {
+                                const path = './storage/app/public/' + id + '.' + contentType;
+                                fs.writeFileSync(path, data.data)
+                            }
 
                             await People.update({
-                                photo_url: path
+                                photo_url: '/storage/' + id + '.' + contentType
                             }, {
                                 where: {id}
                             });
+                        } catch (e) {
+                            // e is an IncomingMessage
+                            console.error('Failed to download media line 718', e.statusCode, e.statusMessage);
                         }
                     }
                 }
@@ -741,9 +766,7 @@ async function processRoomState(state, {
             case 'm.room.history_visibility':
             case 'm.room.guest_access':
             case 'm.room.power_levels':
-            case 'm.room.avatar':
             case 'm.room.join_rules':
-            case 'm.bridge':
             case 'uk.half-shot.bridge':
             case 'com.beeper.chatwoot.conversation_id':
                 break;
@@ -754,6 +777,10 @@ async function processRoomState(state, {
                 break;
             case "m.space.parent":
             case 'm.space.child':
+                // This would be like a discord server
+                // a child is like a channel
+
+                break;
             case 'com.beeper.feed':
             case 'org.matrix.msc2716.marker':
             // a twitter marker?
@@ -761,6 +788,8 @@ async function processRoomState(state, {
             default:
                 console.log(event.type, JSON.stringify(event, null, 4));
         };
+
+        await sleep(100);
     }
 }
 

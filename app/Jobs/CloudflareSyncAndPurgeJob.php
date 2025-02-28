@@ -63,8 +63,6 @@ class CloudflareSyncAndPurgeJob extends AbstractSyncDomainResource
                 }
 
                 //                $registrarService->updateDomainNs($localDomain->name, $domain['name_servers']);
-
-                $localDomain->records()->delete();
                 if (empty($localDomain->cloudflare_id)) {
                     continue;
                 }
@@ -80,7 +78,21 @@ class CloudflareSyncAndPurgeJob extends AbstractSyncDomainResource
                         'priority' => $dnsRecord['priority'],
                         'proxied_through_cloudflare' => $dnsRecord['proxied_through_cloudflare'],
                     ]);
+
+                    if (!$localDomain->wasRecentlyCreated) {
+                        $localDomain->update([
+                            'ttl' => $dnsRecord['ttl'],
+                            'value' => $dnsRecord['content'],
+                            'priority' => $dnsRecord['priority'],
+                            'proxied_through_cloudflare' => $dnsRecord['proxied_through_cloudflare'],
+                        ]);
+                    }
                 }
+
+                $localDomain->records()
+                    // Anything we didn't recently update is probably gone.
+                    ->where('updated_at', '<=', now()->subHours(5))
+                    ->delete();
             }
         } while ($domains->hasMorePages());
         Model::setEventDispatcher($dispatcher);

@@ -61,6 +61,7 @@ class BuildSummaryNotificationJob implements ShouldQueue
 
             $user->notify(new SummaryNotification(
                 $headlines->toArray(),
+                $weather
             ));
         }
     }

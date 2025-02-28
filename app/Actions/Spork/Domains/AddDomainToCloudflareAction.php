@@ -46,6 +46,7 @@ class AddDomainToCloudflareAction extends CustomAction implements ActionInterfac
         foreach ($domains as $domain) {
 
             $cfDns = $cloudflareService->createDomain($domain->name);
+
             $registrarService = $registrarFactory->make($domain->credential);
 
             $registrarService->updateDomainNs($domain->name, $cfDns);

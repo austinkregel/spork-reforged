@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Actions\Spork\Domains\ApplyTagToModelAction;
+use App\Actions\Spork\ApplyTagToModelAction;
 use App\Events\Models\ExternalRssFeed\ExternalRssFeedCreated;
 use App\Events\Models\ExternalRssFeed\ExternalRssFeedCreating;
 use App\Events\Models\ExternalRssFeed\ExternalRssFeedDeleted;
@@ -57,6 +57,7 @@ class ExternalRssFeed extends Model implements Crud, Taggable
         return LogOptions::defaults()
             ->logOnly(['uuid', 'url', 'name', 'profile_photo_path'])
             ->useLogName('external-rss-feed')
+            ->dontSubmitEmptyLogs()
             ->logOnlyDirty();
     }
 }

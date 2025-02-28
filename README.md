@@ -1,5 +1,5 @@
 # What is spork?
-Spork is a personal multi-tool, a place to let my creativity run while and automate random tasks.
+Spork is a personal multi-tool, a place to let my creativity run wild and automate random tasks.
 
 # How do I run it?
 If you'd like to get this project up and running, it's pretty straight forward using docker and Laravel sail. Other deployment methods are not supported officially, but will likely work with little issue. I deploy this personally using Laravel Forge.

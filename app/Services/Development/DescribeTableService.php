@@ -17,17 +17,11 @@ class DescribeTableService
 {
     public function describe(Model $model): array
     {
-        $mapField = fn ($everything) => array_values(array_map(fn ($query) => $query->Field, $everything));
-        $description = cache()->remember(
-            'description.'.get_class($model),
-            now()->addHour(),
-            fn () => DB::select('describe '.(new $model)->getTable())
-        );
-        $indexes = cache()->remember(
-            'indexes.'.get_class($model),
-            now()->addHour(),
-            fn () => DB::select('show indexes from '.(new $model)->getTable())
-        );
+        return cache()->remember('describe-result.'.$model->getTable(), now()->addHour(), function () use ($model) {
+            $table = (new $model)->getTable();
+        $mapField = fn($everything) => array_values(array_map(fn($query) => $query->Field, $everything));
+            $description = cache()->remember('description.'.$table, now()->addHour(), fn () => DB::select('describe '.$table));
+            $indexes = cache()->remember('indexes.'.$table, now()->addHour(), fn () => DB::select('show indexes from '.$table));
         $fields = $mapField($description);
         $sorts = array_filter($description, function ($query) {
             if (str_contains($query->Type, 'int') && $query->Null == 'NO') {
@@ -35,9 +29,9 @@ class DescribeTableService
             }
 
             if (Str::contains($query->Type, [
-                'timestamp',
-                'date',
-            ]) && $query->Null == 'NO') {
+                    'timestamp',
+                    'date',
+                ]) && $query->Null == 'NO') {
                 return true;
             }
 
@@ -72,7 +66,7 @@ class DescribeTableService
 
                 /** @var \ReflectionNamedType $t */
                 foreach ($allTypes as $t) {
-                    if (! class_exists($t->getName())) {
+                    if (!class_exists($t->getName())) {
                         return false;
                     }
                 }
@@ -83,8 +77,8 @@ class DescribeTableService
         $relations = array_filter($methodsThatReturnAClass, function ($type) {
             $c = new \ReflectionClass($type->getName());
 
-            if (! empty($parentClass = $c->getParentClass())) {
-                if (! empty($parentParentClass = $parentClass->getParentClass())) {
+            if (!empty($parentClass = $c->getParentClass())) {
+                if (!empty($parentParentClass = $parentClass->getParentClass())) {
                     if ($parentParentClass->getName() === \Illuminate\Database\Eloquent\Relations\Relation::class) {
                         return true;
                     }
@@ -103,7 +97,7 @@ class DescribeTableService
         foreach ($notedInstances as $class) {
             $instance = app($class);
             if (in_array($model::class, $instance->models)) {
-                $arrayedInstance = (array) $instance;
+                $arrayedInstance = (array)$instance;
 
                 if (method_exists($instance, 'fields')) {
                     $arrayedInstance['fields'] = $instance->fields();
@@ -121,7 +115,7 @@ class DescribeTableService
             'query_actions' => ActionFilter::WHITELISTED_ACTIONS,
             'fillable' => $fillable,
             'fields' => $fields,
-            'filters' => array_map(fn ($query) => $query->Column_name, $indexes),
+            'filters' => array_map(fn($query) => $query->Column_name, $indexes),
             'includes' => array_keys($relations),
             'sorts' => $mapField($sorts),
             'types' => array_reduce($description, function ($allFields, $field) {
@@ -138,7 +132,7 @@ class DescribeTableService
                             'type' => match ($simpleType[0]) {
                                 'bigint' => 'number',
                                 'varchar' => 'text',
-                                'longtext' => 'textarea',
+                                'text', 'longtext' => 'textarea',
                                 'datetime', 'timestamp' => 'datetime',
 
                                 default => $simpleType[0]
@@ -153,10 +147,19 @@ class DescribeTableService
                     ]
                 );
             }, []),
-            'required' => $mapField(array_filter($description, fn ($query) => $query->Null === 'NO' && $query->Extra !== 'auto_increment')),
+            'required' => $mapField(array_filter($description, fn($query) => $query->Null === 'NO' && $query->Extra !== 'auto_increment')),
         ], $model instanceof Taggable ? [
             'tags' => Tag::query()->whereNull('type')->orWhere('type', Str::singular($model->getTable()))->get(),
-        ] : []);
+        ] : [],
+            auth()->check() ? [
+                'permissions' => [
+                    'create' => auth()->user()->can('create_' . Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                    'update' => auth()->user()->can('update_' . Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                    'delete' => auth()->user()->can('delete_' . Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                    'delete_any' => auth()->user()->can('delete_any_' . Str::singular($model->getTable())) || auth()->user()->hasRole('developer'),
+                ],
+            ] : []);
+        });
     }
 
     public function describeTable(string $table): array

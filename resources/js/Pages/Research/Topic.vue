@@ -6,7 +6,6 @@
 @media (prefers-color-scheme: dark) {
     .dark\:pslate-invert > blockquote {
         border-color: #fff;
-
     }
 }
 </style>

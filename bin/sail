@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 export WWWUSER=${WWWUSER:-$UID}
 export WWWGROUP=${WWWGROUP:-$(id -g)}
@@ -14,3 +14,4 @@ if [ ! -f vendor/bin/sail ]; then
 fi
 
 vendor/bin/sail "$@"
+

@@ -141,6 +141,15 @@ class LocalAdminController extends Controller
         return response('', 204);
     }
 
+    public function destroyMany(DeleteRequest $request, $abstractEloquentModel)
+    {
+        $modelClass = $this->getModel($request);
+        $abstractEloquentModel = $modelClass::findOrFail($abstractEloquentModel);
+        $abstractEloquentModel->delete();
+
+        return response('', 204);
+    }
+
     public function forceDestroy(ForceDeleteRequest $request, $abstractEloquentModel)
     {
         $modelClass = $this->getModel($request);
@@ -154,7 +163,7 @@ class LocalAdminController extends Controller
             return;
         }
 
-        $abstractEloquentModel->forceDelete();
+        $abstractEldoquentModel->forceDelete();
 
         return response('', 204);
     }

@@ -13,6 +13,7 @@ use App\Events\Models\Message\MessageUpdating;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Scout\Searchable;
 use Spatie\Tags\HasTags;
 use Staudenmeir\EloquentJsonRelations\HasJsonRelationships;
 
@@ -23,6 +24,7 @@ use Staudenmeir\EloquentJsonRelations\HasJsonRelationships;
 class Message extends Model implements Taggable
 {
     use HasFactory, HasJsonRelationships, HasTags;
+    use Searchable;
 
     public $fillable = [
         'from_person',
@@ -68,7 +70,7 @@ class Message extends Model implements Taggable
 
     public function getIsUserAttribute()
     {
-        return auth()->id() === $this->from_person;
+        return in_array($this->from_email, auth()->user()?->person?->emails ?? []);
     }
 
     public function credential(): BelongsTo

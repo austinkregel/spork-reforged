@@ -15,7 +15,7 @@ class GoogleMapsGeocodingService implements GeocodingServiceContract
         $baseURL = 'https://maps.googleapis.com/maps/api/geocode/json?address=';
         $addressURL = urlencode($address).'&key='.env('GOOGLE_MAPS_API_KEY');
         $url = $baseURL.$addressURL;
-        $response = cache()->remember($address, now()->addDay(), fn () => $client->request('GET', $url)->getBody()->getContents());
+        $response = $client->request('GET', $url)->getBody()->getContents();
         $response = json_decode($response);
 
         if ($response->status === 'ZERO_RESULTS') {
@@ -37,5 +37,29 @@ class GoogleMapsGeocodingService implements GeocodingServiceContract
 
             dd($response, $address);
         }
+    }
+    public function findBusinesses(string $name): array
+    {
+        $client = new Client(); // GuzzleHttp\Client
+        $baseURL = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+        $baseQuery = sprintf('?fields=formatted_address,name,rating,opening_hours,geometry&query=%s&inputtype=textquery&radius=321869&location=michigan', urlencode($name));
+        $addressURL = $baseURL.$baseQuery.'&key='.env('GOOGLE_MAPS_API_KEY');
+        $resultSet = [];
+        do {
+            $response = cache()->remember($addressURL, now()->addDay(), fn() => $client->request('GET', $addressURL)->getBody()->getContents());
+            $response = json_decode($response);
+
+            if ($response->status === 'ZERO_RESULTS') {
+                return [];
+            }
+            foreach ($response->results as $result) {
+                $resultSet[] = $result;
+            }
+            if (isset($response->next_page_token)) {
+                $addressURL = $baseURL.'?key='.env('GOOGLE_MAPS_API_KEY').'&pagetoken='.$response->next_page_token;
+            }
+        } while (isset($response->next_page_token));
+
+        return $resultSet;
     }
 }

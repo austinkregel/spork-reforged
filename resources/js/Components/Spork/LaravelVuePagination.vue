@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import RenderlessLaravelVuePagination from './RenderlessLaravelVuePagination';
+import RenderlessLaravelVuePagination from './RenderlessLaravelVuePagination.vue';
 
 export default {
     props: {
@@ -85,7 +85,7 @@ export default {
             this.$emit('pagination-change-page', page);
         }
     },
-
+    emits: ['pagination-change-page'],
     components: {
         RenderlessLaravelVuePagination
     }

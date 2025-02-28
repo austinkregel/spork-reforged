@@ -22,16 +22,16 @@ class GreaterThanOperator extends AbstractLogicalOperator
             }
 
             // This is meant to be a numeric or date operator, checking the greatness of a string is beyond the scope of this lib.
-            return strlen($valueFromCondition) > strlen($valueFromParameter);
+            return strlen($valueFromCondition ?? '') > strlen($valueFromParameter ?? '');
         }
 
         if (! is_numeric($valueFromCondition)) {
             // At the time of writing, I'm not sure what could end up here other than maybe objects/arrays?
-            $valueFromCondition = strlen($valueFromCondition);
+            $valueFromCondition = strlen($valueFromCondition ?? '');
         }
 
         if (! is_numeric($valueFromParameter)) {
-            $valueFromParameter = strlen($valueFromParameter);
+            $valueFromParameter = strlen($valueFromParameter ?? '');
         }
 
         return $valueFromCondition > $valueFromParameter;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Models\Domain\Media;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Filesystem\Filesystem;
@@ -46,28 +47,30 @@ class BuildMetaDataFile implements ShouldQueue
 
             $data = json_decode($o, true);
 
+            $newFile = str_replace('/media/Downloads', '', $this->path);
+
+
+            $metaPath = storage_path('meta'.str_replace('.'.$extension, '.json', $newFile));
+
+            if (!file_exists((new Filesystem)->dirname($metaPath))) {
+                (new Filesystem)
+                    ->makeDirectory((new Filesystem)->dirname($metaPath), 0755, true);
+            }
+
+            $media = new Media(
+                $this->path,
+                false,
+                array_values(array_filter($data['media']['track'], fn($track) => $track['@type'] === 'Audio')),
+                array_values(array_filter($data['media']['track'], fn($track) => $track['@type'] === 'Text')),
+            );
+
             $data['name'] = $name;
             $data['path'] = $path;
             // bytes
             $data['size'] = $file->getSize();
             $data['type'] = $file->getType();
 
-            if (! file_exists(storage_path('meta/'.$extension))) {
-                (new Filesystem)
-                    ->makeDirectory(storage_path('meta/'.$extension), 0755, true);
-            }
-
-            $metadataNewPath = storage_path('meta/'.$extension.'/'.md5($path).'.json');
-            $metadataPath = storage_path('meta/'.md5($path).'.json');
-
-            if (file_exists($metadataPath)) {
-                // info('Danger, file conflict in md5 hash', $data);
-                (new Filesystem)->move($metadataPath, $metadataNewPath);
-
-                return;
-            }
-
-            file_put_contents($metadataNewPath, json_encode($data, JSON_PRETTY_PRINT));
+            file_put_contents($metaPath, json_encode($media, JSON_PRETTY_PRINT));
         });
     }
 }

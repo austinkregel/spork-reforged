@@ -18,13 +18,13 @@
             </tr>
             </thead>
             <tbody class="bg-white dark:bg-stone-900">
-            <ContextMenu as="tr" v-for="person in items" :key="person" class="even:bg-stone-50 dark:even:bg-stone-800">
+            <ContextMenu as="tr" v-for="item in items" :key="item" class="even:bg-stone-50 dark:even:bg-stone-800">
               <td v-for="header in headers" class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-stone-900 dark:text-stone-50 sm:pl-3">
-                {{ parseTheAccessor(header, person) }}
+                {{ parseTheAccessor(header, item) }}
               </td>
 
               <template #items>
-                <slot name="context-items" :item="person"></slot>
+                <slot name="context-items" :item="item"></slot>
               </template>
             </ContextMenu>
 

@@ -33,7 +33,7 @@
                         current: false,
                     },
                     {
-                        name: 'Servers',
+                        name: 'Infrastructure',
                         href: '/basement/servers',
                         icon: ServerIcon,
                         current: false,

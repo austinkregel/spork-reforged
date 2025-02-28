@@ -26,7 +26,7 @@ class RssFeedService implements RssServiceContract
                 function () use ($url) {
                     $request = Http::withHeaders([
                         'Accept' => '*/*',
-                        'User-Agent' => 'curl/7.81.0',
+                        'User-Agent' => 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0',
                     ])->get($url);
                     // This is for accidental extra decoding, which seems to happen with the CNN news source.
                     $body = str_replace(
@@ -47,7 +47,7 @@ class RssFeedService implements RssServiceContract
                 }
             );
         } catch (ConnectionException|ClientException|HttpException $e) {
-            info('Exception occurred', [$e->getMessage(), $url]);
+            info('Exception occurred', [$e->getMessage(), $url, get_class($e)]);
 
             return null;
         }

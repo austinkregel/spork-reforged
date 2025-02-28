@@ -44,24 +44,27 @@
         </DialogModal>
 
         <template #items="{ close }">
-            <!-- Active: "bg-stone-100 text-stone-900", Not Active: "text-stone-700" -->
-            <button @click="() => createTask = true" class="flex items-center gap-2 text-stone-700 dark:text-stone-200 px-4 py-2" role="menuitem" tabindex="-1">
-                <ArrowTopRightOnSquareIcon  class="w-4 h-4" />
-                Open
-            </button>
 
-            <button v-if="task.status !== 'In Progress'" @click="() => {task.status = 'In Progress'; close() }" class="flex items-center gap-2 px-4 py-2">
-                <DynamicIcon icon-name="BriefcaseIcon" class="w-4 h-4" />
+            <ContextMenuItem @click="() => createTask = true">
+                <DynamicIcon icon-name="ArrowTopRightOnSquareIcon"  class="w-4 h-4" />
+                Open
+            </ContextMenuItem>
+            <ContextMenuItem
+                v-if="task.status !== 'In Progress'"
+                @click="() => {task.status = 'In Progress'; close() }"
+            >
+                <DynamicIcon icon-name="BriefcaseIcon"  class="w-4 h-4" />
                 Start Work
-            </button>
-            <button v-if="task.status !== 'To Do'" @click="() => {task.status = 'To Do'; close() }" class="flex items-center gap-2 px-4 py-2">
+            </ContextMenuItem>
+
+            <ContextMenuItem v-if="task.status !== 'To Do'" @click="() => {task.status = 'To Do'; close() }">
                 <DynamicIcon icon-name="ClockIcon" class="w-4 h-4" />
                 Back to the start
-            </button>
-            <button v-if="task.status !== 'Done'" @click="() => {task.status = 'Done'; close() }" class="flex items-center gap-2 px-4 py-2">
+            </ContextMenuItem>
+            <ContextMenuItem v-if="task.status !== 'Done'" @click="() => {task.status = 'Done'; close() }" >
                 <DynamicIcon icon-name="CheckCircleIcon" class="w-4 h-4" />
                 Mark as Done
-            </button>
+            </ContextMenuItem>
 
             <!-- Actions I could take with a single task. Mark as in progress or done, adding a checklist,  -->
             <hr class="border-t border-stone-200 dark:border-stone-500" />
@@ -90,6 +93,7 @@ import {
     UserPlusIcon
 } from "@heroicons/vue/24/outline/index.js";
 import DynamicIcon from "@/Components/DynamicIcon.vue";
+import ContextMenuItem from "@/Components/ContextMenus/ContextMenuButton.vue";
 
 const { task } = defineProps({
     task: {

@@ -174,7 +174,6 @@ class Code
 
     public static function instancesOf(string $desiredParentClass): static
     {
-        return cache()->rememberForever('instanceOfCache.'.$desiredParentClass, function () use ($desiredParentClass) {
             // Classes known to composer in array form
             $traits = [];
             $classes = [];
@@ -231,7 +230,6 @@ class Code
             };
 
             return new static($possibleInstances);
-        });
     }
 
     public function import(string|array $fqns): static

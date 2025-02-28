@@ -34,11 +34,11 @@ export default {
             shadow ? 'shadow' : ''
         ]"
     >
-        <div class="py-2 px-4" :class="[
+        <div v-if="header" class="py-2 px-4" :class="[
             darkHeader ? 'dark:bg-stone-800  dark:text-stone-200 bg-stone-100 text-stone-800' : '',
         ]">{{ header }}</div>
         <div class="p-4">{{ body }}</div>
-        <div class="py-2 px-4" :class="[
+        <div v-if="footer" class="py-2 px-4" :class="[
             darkFooter ? 'dark:bg-stone-800 dark:text-stone-200 bg-stone-100 text-stone-800' : '',
         ]">{{ footer }}</div>
     </div>

@@ -36,7 +36,7 @@ class CloudflareSyncJob extends AbstractSyncRegistrarResourceJob
 
                 foreach ($data as $key => $value) {
                     if ($localDomain->$key instanceof Carbon || $value instanceof Carbon) {
-                        if ($value instanceof Carbon && ! $value->equalTo($localDomain->$key)) {
+                        if ($value instanceof Carbon && (is_null($localDomain->$key) || ! $value->equalTo($localDomain->$key))) {
                             $localDomain->$key = $value;
                         } elseif ($localDomain->$key instanceof Carbon && ! $localDomain->$key->equalTo($value)) {
                             $localDomain->$key = $value;

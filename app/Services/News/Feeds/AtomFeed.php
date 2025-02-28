@@ -63,7 +63,7 @@ class AtomFeed extends AbstractFeed
             }
 
             $feedItem = new FeedItem();
-            $feedItem->id = $post['id'];
+            $feedItem->id = (string) $post['id'];
             $feedItem->title = $post['title'] ?? null;
             $feedItem->content = $post['content'] ?? null;
             $feedItem->published_at = $post['published'] ?? $post['updated'];
@@ -72,6 +72,10 @@ class AtomFeed extends AbstractFeed
                 $feedItem->url = $post['link'];
             } elseif (isset($post['link']['@attributes'])) {
                 $feedItem->url = $post['link']['@attributes']['href'];
+            } else {
+                info('no link', ['context' => $post]);
+
+                return $feedItem;
             }
 
             if (str_starts_with($feedItem->url, 'https://www.youtube.com')) {

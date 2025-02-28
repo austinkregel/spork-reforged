@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::dropIfExists('transactions');
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->string('transaction_id')->collation('utf8_bin')->unique();
+            $table->string('transaction_id')->unique();
             $table->string('name')->nullable()->index();
             $table->double('amount', 13, 2)->nullable();
             $table->string('account_id')->nullable()->index();

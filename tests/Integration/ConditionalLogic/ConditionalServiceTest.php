@@ -21,7 +21,7 @@ class ConditionalServiceTest extends TestCase
 
         $this->assertCount(1, $navigation);
 
-        $items = $navigation->toArray();
+        $items = $navigation->toArray()[''];
 
         $this->assertCount(1, $items);
 
@@ -39,18 +39,13 @@ class ConditionalServiceTest extends TestCase
 
         $navigation = $service->navigation();
 
-        $items = $navigation->toArray();
+        $items = $navigation->toArray()[''];
 
         //        $this->assertCount(8, $items);
 
         $this->assertSame([
             0 => 'Dashboard',
             1 => 'Projects',
-            2 => 'Banking',
-            3 => 'CRUD',
-            5 => 'Tags',
-            6 => 'Email',
-            7 => 'Settings',
         ], array_map(fn ($item) => $item['name'], $items));
     }
 
@@ -66,17 +61,12 @@ class ConditionalServiceTest extends TestCase
 
         $items = $navigation->toArray();
 
-        $this->assertCount(8, $items);
+        $this->assertCount(5, $items);
+        $this->assertCount(2, $items['']);
 
         $this->assertSame([
             0 => 'Dashboard',
             1 => 'Projects',
-            2 => 'Banking',
-            3 => 'CRUD',
-            4 => 'Logic',
-            5 => 'Tags',
-            6 => 'Email',
-            7 => 'Settings',
-        ], array_map(fn ($item) => $item['name'], $items));
+        ], array_map(fn ($item) => $item['name'], $items['']));
     }
 }

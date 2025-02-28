@@ -17,12 +17,18 @@ use App\Models\Traits\ScopeRelativeSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Scout\Searchable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Account extends Model implements Crud
 {
     use HasFactory;
+    use LogsActivity;
     use ScopeQSearch;
     use ScopeRelativeSearch;
+    use Searchable;
 
     protected $fillable = [
         'account_id',
@@ -48,5 +54,19 @@ class Account extends Model implements Crud
     public function credential(): BelongsTo
     {
         return $this->belongsTo(Credential::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('account')
+            ->logFillable()
+            ->dontSubmitEmptyLogs()
+            ->logOnlyDirty();
     }
 }

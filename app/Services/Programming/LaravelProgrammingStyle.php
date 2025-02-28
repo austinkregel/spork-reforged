@@ -430,6 +430,10 @@ class LaravelProgrammingStyle extends Code
                     continue;
                 }
 
+                if (is_array($listenerInformation['listener'])) {
+                    continue;
+                }
+
                 array_push($actualListeners, $listenerInformation['listener']);
             }
 

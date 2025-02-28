@@ -35,11 +35,17 @@ class UpdateFeed implements ShouldQueue
         /** @var AbstractFeed $rssFeed */
         $rssFeed = $service->fetchRssFeed($this->feed->url);
 
+        if (empty($rssFeed)) {
+            return;
+        }
+
         /** @var FeedItem $feedItem */
         foreach ($rssFeed->getData() as $feedItem) {
             // If we already have the item's GUID, we must already have this item so we should stop,
             // as any items afterwards are probably already in our system as well.
-            if ($this->feed->articles()->where('external_guid', $feedItem->getUuidIfExists())->exists()) {
+            if ($this->feed->articles()
+                ->where('external_guid', $feedItem->getUuidIfExists() ?? $feedItem->getUrl())
+                ->exists()) {
                 break;
             }
 

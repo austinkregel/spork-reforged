@@ -10,10 +10,15 @@ TAG=$PHP_VERSION-$(git rev-parse HEAD | head -c 7)
 
 export WWWUSER=${WWWUSER:-$UID}
 export WWWGROUP=${WWWGROUP:-$(id -g)}
+export PHP_VERSION=${PHP_VERSION:-8.2}
 
-docker build --build-arg WWWUSER=$WWWUSER --build-arg WWWGROUP=$WWWGROUP -t austinkregel/base:${TAG} .
+docker build \
+    --build-arg WWWUSER=$WWWUSER \
+    --build-arg WWWGROUP=$WWWGROUP \
+    --build-arg PHP_VERSION=$PHP_VERSION\
+    -t ghcr.io/austinkregel/base:${TAG} .
 
-docker tag austinkregel/base:${TAG} austinkregel/base:latest
+docker tag ghcr.io/austinkregel/base:${TAG} ghcr.io/austinkregel/base:php${PHP_VERSION}
 
-docker push austinkregel/base:${TAG}
-docker push austinkregel/base:latest
+docker push ghcr.io/austinkregel/base:${TAG}
+docker push ghcr.io/austinkregel/base:php${PHP_VERSION}

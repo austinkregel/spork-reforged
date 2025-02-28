@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Page extends Model implements Crud, ModelQuery
+class Page extends Model implements ModelQuery, Crud
 {
     use HasFactory;
     use HasProjectResource;
